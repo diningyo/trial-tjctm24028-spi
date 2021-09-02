@@ -1,2 +1,7 @@
 *.class
 *.log
+
+.bloop
+.metals
+target
+test_run_dir
