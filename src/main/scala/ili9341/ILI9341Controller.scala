@@ -19,13 +19,11 @@ import sequencer._
 class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 9600, clockFreq: Int = 100) extends Module {
   val io = IO(new SPIIO)
 
-  io.tx := io.rx
-
   val m_seq = Module(new Sequencer(p))
   val m_uart = Module(new SPIController(baudrate, clockFreq))
 
   m_uart.io.mbus <> m_seq.io.sio
-  io <> m_uart.io.uart
+  io <> m_uart.io.spi
 }
 
 object genRTL extends App {

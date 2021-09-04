@@ -18,37 +18,59 @@ case object SPITx extends SPIDirection
 case object SPIRx extends SPIDirection
 
 /**
-  * UARTの制御モジュール
+  * SPIの制御モジュール
   * @param baudrate ボーレート
   * @param clockFreq クロックの周波数(MHz)
   */
 class TxRxCtrl(baudrate: Int=9600,
                clockFreq: Int=100) extends Module {
   val io = IO(new Bundle {
-    val uart = new SPIIO
+    val spi = new SPIIO
     val r2c = Flipped(new CSR2CtrlIO())
   })
 
   val durationCount = round(clockFreq * pow(10, 6) / baudrate).toInt
 
+  val r_sck_ctr = RegInit(0.U(32.W))
+
+  when (r_sck_ctr === durationCount.U) {
+    r_sck_ctr := 0.U
+  }.otherwise {
+    r_sck_ctr := r_sck_ctr + 1.U
+  }
+
+  val r_debug_clk = RegInit(0.U(32.W))
+
+  when (r_debug_clk === (durationCount / 2).U) {
+    r_debug_clk := 0.U
+  }.otherwise {
+    r_debug_clk := r_debug_clk + 1.U
+  }
+
+  io.spi.debug_clk := r_debug_clk === (durationCount / 2).U
+
+  io.spi.sck := r_sck_ctr === durationCount.U
+  io.spi.csx := false.B  // always select.
+  io.spi.dcx := false.B  // tmp. send command only
+
   val m_tx_ctrl = Module(new Ctrl(SPITx, durationCount))
   val m_rx_ctrl = Module(new Ctrl(SPIRx, durationCount))
 
-  io.uart.tx := m_tx_ctrl.io.uart
+  io.spi.sdi := m_tx_ctrl.io.spi
   m_tx_ctrl.io.reg <> io.r2c.tx
 
-  m_rx_ctrl.io.uart := io.uart.rx
+  m_rx_ctrl.io.spi := io.spi.sdo
   m_rx_ctrl.io.reg <> io.r2c.rx
 }
 
 /**
-  * UARTの各方向の制御モジュール
-  * @param direction UARTの送受信の方向
+  * SPIの各方向の制御モジュール
+  * @param direction SPIの送受信の方向
   * @param durationCount 1bit分のカウント
   */
 class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   val io = IO(new Bundle {
-    val uart = direction match {
+    val spi = direction match {
       case SPITx => Output(UInt(1.W))
       case SPIRx => Input(UInt(1.W))
     }
@@ -73,7 +95,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   // directionをmatch式で処理
   val w_start_req = direction match {
     case SPITx => !io.reg.asInstanceOf[FIFORdIO[UInt]].empty
-    case SPIRx => !io.uart
+    case SPIRx => !io.spi
   }
 
   val w_update_req = r_duration_ctr === (durationCount - 1).U
@@ -108,7 +130,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
     case SPITx =>
       val reg = io.reg.asInstanceOf[FIFORdIO[UInt]]
 
-      io.uart := MuxCase(1.U, Seq(
+      io.spi := MuxCase(1.U, Seq(
         m_stm.io.state.start -> 0.U,
         m_stm.io.state.data -> reg.data(r_bit_idx)
       ))
@@ -123,7 +145,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
         r_rx_data := 0.U
       } .elsewhen (m_stm.io.state.data) {
         when (w_update_req) {
-          r_rx_data := r_rx_data | (io.uart << r_bit_idx)
+          r_rx_data := r_rx_data | (io.spi << r_bit_idx)
         }
       }
       reg.enable := w_fin
