@@ -6,7 +6,7 @@ ThisBuild / organization     := "diningyo"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "chisel-dmg",
+    name := "trial-tjctm24028-spi",
     libraryDependencies ++= Seq(
       "edu.berkeley.cs" %% "chisel3" % "3.4.3",
       "edu.berkeley.cs" %% "chisel-iotesters" % "1.5.3",
