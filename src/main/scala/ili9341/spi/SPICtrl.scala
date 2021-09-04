@@ -54,6 +54,11 @@ class TxRxCtrl(baudrate: Int=9600,
   io.spi.dcx := false.B  // tmp. send command only
   io.spi.led := true.B
 
+  val r_reset = RegInit(true.B)
+
+  r_reset := false.B
+  io.spi.reset := r_reset
+
   val m_tx_ctrl = Module(new Ctrl(SPITx, durationCount))
   val m_rx_ctrl = Module(new Ctrl(SPIRx, durationCount))
 

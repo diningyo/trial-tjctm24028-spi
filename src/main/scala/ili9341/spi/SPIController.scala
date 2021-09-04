@@ -16,6 +16,7 @@ class SPIIO extends Bundle {
   val csx = Output(Bool())
   val sdi = Output(UInt(1.W))
   val sdo = Input(UInt(1.W))
+  val reset = Output(Bool())
   val debug_clk = Output(Bool())
 }
 
