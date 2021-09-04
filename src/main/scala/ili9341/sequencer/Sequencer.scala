@@ -34,7 +34,7 @@ class Sequencer(p: SimpleIOParams)
   })
 
   // ステートマシン
-  val r_stm = RegInit(sIdle)
+  val r_stm = RegInit(State.sTX)
 
   // sIdleステートの制御
   val w_has_rx_data = Wire(Bool())
@@ -95,15 +95,9 @@ class Sequencer(p: SimpleIOParams)
   // ステートマシン
   switch (r_stm) {
     is (sIdle) {
-      when (w_has_rx_data) {
-        r_stm := sRX
-      }
+      r_stm := r_stm
     }
-    is (sRX) {
-      when (w_done_rx_data) {
-        r_stm := sTX
-      }
-    }
+
     is (sTX) {
       when (w_done_tx_data) {
         r_stm := sIdle
@@ -113,7 +107,7 @@ class Sequencer(p: SimpleIOParams)
 
   // IOの接続
   io.sio.wren := w_tx_state_wren
-  io.sio.wrdata := r_rx_data
+  io.sio.wrdata := 9.U
   io.sio.rden := w_read_req || r_rx_fifo_req || w_tx_state_rden
   io.sio.addr := MuxCase(stat.U, Seq(
     (r_stm === sRX) -> rxFifo.U,

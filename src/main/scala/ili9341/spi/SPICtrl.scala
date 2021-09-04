@@ -31,12 +31,21 @@ class TxRxCtrl(baudrate: Int=9600,
 
   val durationCount = round(clockFreq * pow(10, 6) / baudrate).toInt
 
+  println(s"durationCount = ${durationCount}")
+
+
   val r_sck_ctr = RegInit(0.U(32.W))
 
-  when (r_sck_ctr === durationCount.U) {
+  when (r_sck_ctr === (durationCount / 2).U) {
     r_sck_ctr := 0.U
   }.otherwise {
     r_sck_ctr := r_sck_ctr + 1.U
+  }
+
+  val r_sck = RegInit(true.B)
+
+  when (r_sck_ctr === (durationCount / 2).U) {
+    r_sck := !r_sck
   }
 
   val r_debug_clk = RegInit(0.U(32.W))
@@ -49,7 +58,7 @@ class TxRxCtrl(baudrate: Int=9600,
 
   io.spi.debug_clk := r_debug_clk === (durationCount / 2).U
 
-  io.spi.sck := r_sck_ctr === durationCount.U
+  io.spi.sck := r_sck
   io.spi.csx := false.B  // always select.
   io.spi.dcx := false.B  // tmp. send command only
   io.spi.led := true.B
@@ -93,7 +102,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   // 受信方向は受信した信号と半周期ずれたところで
   // データを確定させるため初期値をずらす
   val initDurationCount = direction match {
-    case SPITx => 0
+    case SPITx => durationCount / 2
     case SPIRx => durationCount / 2
   }
 
