@@ -1,6 +1,6 @@
 // See README.md for license details.
 
-package chapter6.sequencer
+package ili9341.sequencer
 
 import chisel3._
 import chisel3.util._
@@ -26,7 +26,7 @@ class Sequencer(p: SimpleIOParams)
                (implicit val debug: Boolean = false) extends Module {
 
   import State._
-  import chapter6.uart.RegInfo._
+  import ili9341.spi.RegInfo._
 
   val io = IO(new Bundle {
     val sio = new SimpleIO(p)

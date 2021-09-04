@@ -1,6 +1,6 @@
 // See README.md for license details.
 
-package chapter6.uart
+package ili9341.spi
 
 import chisel3._
 import chisel3.util._
@@ -10,6 +10,12 @@ import scala.math.{pow, round}
 import io._
 
 class SPIIO extends Bundle {
+  val sck = Output(Clock())
+  val led = Output(Bool())
+  val dc = Output(Bool())
+  val cs = Output(Bool())
+  val sdo = Output(UInt(1.W))
+  val sdi = Input(UInt(1.W))
   val tx = Output(UInt(1.W))
   val rx = Input(UInt(1.W))
 }
