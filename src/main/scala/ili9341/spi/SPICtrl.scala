@@ -52,6 +52,7 @@ class TxRxCtrl(baudrate: Int=9600,
   io.spi.sck := r_sck_ctr === durationCount.U
   io.spi.csx := false.B  // always select.
   io.spi.dcx := false.B  // tmp. send command only
+  io.spi.led := true.B
 
   val m_tx_ctrl = Module(new Ctrl(SPITx, durationCount))
   val m_rx_ctrl = Module(new Ctrl(SPIRx, durationCount))
