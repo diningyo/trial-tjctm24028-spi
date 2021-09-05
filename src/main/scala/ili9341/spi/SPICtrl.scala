@@ -33,6 +33,8 @@ class TxRxCtrl(baudrate: Int=9600,
 
   println(s"durationCount = ${durationCount}")
 
+  val m_tx_ctrl = Module(new Ctrl(SPITx, durationCount))
+  val m_rx_ctrl = Module(new Ctrl(SPIRx, durationCount))
 
   val r_sck_ctr = RegInit(0.U(32.W))
 
@@ -58,20 +60,21 @@ class TxRxCtrl(baudrate: Int=9600,
 
   io.spi.debug_clk := r_debug_clk === (durationCount / 2).U
 
-  io.spi.sck := r_sck
-  io.spi.csx := false.B  // always select.
-  io.spi.dcx := false.B  // tmp. send command only
+  val dcx = RegInit(true.B)
+
+  dcx := false.B
+
+  io.spi.sck := Mux(!(m_tx_ctrl.io.csx && m_rx_ctrl.io.csx),  r_sck, false.B)
+  io.spi.dcx := dcx//true.B  // tmp. send command only
   io.spi.led := true.B
 
-  val r_reset = RegInit(true.B)
+  val r_reset = RegInit(false.B)
 
-  r_reset := false.B
-  io.spi.reset := r_reset
-
-  val m_tx_ctrl = Module(new Ctrl(SPITx, durationCount))
-  val m_rx_ctrl = Module(new Ctrl(SPIRx, durationCount))
+  r_reset := true.B
+  io.spi.reset := true.B //r_reset
 
   io.spi.sdi := m_tx_ctrl.io.spi
+  io.spi.csx := m_tx_ctrl.io.csx && m_rx_ctrl.io.csx
   m_tx_ctrl.io.reg <> io.r2c.tx
 
   m_rx_ctrl.io.spi := io.spi.sdo
@@ -93,6 +96,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
       case SPITx => Flipped(new FIFORdIO(UInt(8.W)))
       case SPIRx => Flipped(new FIFOWrIO(UInt(8.W)))
     }
+    val csx = Output(Bool())
   })
 
   val m_stm = Module(new CtrlStateMachine)
@@ -102,9 +106,11 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   // 受信方向は受信した信号と半周期ずれたところで
   // データを確定させるため初期値をずらす
   val initDurationCount = direction match {
-    case SPITx => durationCount / 2
+    case SPITx => durationCount / 4
     case SPIRx => durationCount / 2
   }
+
+  io.csx := !m_stm.io.state.data
 
   // 動作開始のトリガはTx/Rxで異なるため
   // directionをmatch式で処理
@@ -147,7 +153,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
 
       io.spi := MuxCase(1.U, Seq(
         m_stm.io.state.start -> 0.U,
-        m_stm.io.state.data -> reg.data(r_bit_idx)
+        m_stm.io.state.data -> reg.data(7.U - r_bit_idx)
       ))
 
       reg.enable := m_stm.io.state.stop && w_update_req

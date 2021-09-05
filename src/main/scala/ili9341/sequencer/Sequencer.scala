@@ -107,7 +107,7 @@ class Sequencer(p: SimpleIOParams)
 
   // IOの接続
   io.sio.wren := w_tx_state_wren
-  io.sio.wrdata := 9.U
+  io.sio.wrdata := Commands.ILI9341_RDMODE.U
   io.sio.rden := w_read_req || r_rx_fifo_req || w_tx_state_rden
   io.sio.addr := MuxCase(stat.U, Seq(
     (r_stm === sRX) -> rxFifo.U,
