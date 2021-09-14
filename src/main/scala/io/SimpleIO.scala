@@ -4,6 +4,7 @@ package io
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.ChiselEnum
 
 /**
   * SimpleIOクラスのパラメータ用クラス
@@ -16,6 +17,30 @@ case class SimpleIOParams
    dataBits: Int = 8
   )
 
+object SpiAttr extends ChiselEnum {
+  val Cmd, Data = Value
+}
+
+class SpiData extends Bundle {
+  val attr = SpiAttr()
+  val data = UInt(8.W)
+
+  def set(d: UInt) = {
+    data := d(7, 0)
+    attr := SpiAttr(d(8))
+  }
+}
+
+object SpiData {
+  def apply(data: UInt, attr: SpiAttr.Type = SpiAttr.Data) = {
+    val ret = new SpiData
+    ret.data := data
+    ret.attr := attr
+    ret
+  }
+}
+
+
 /**
   * SimpleIO
   * @param p IOパラメータ
@@ -24,7 +49,7 @@ class SimpleIO(p: SimpleIOParams) extends Bundle {
   val addr = Output(UInt(p.addrBits.W))
   val wren = Output(Bool())
   val rden = Output(Bool())
-  val wrdata = Output(UInt(p.dataBits.W))
+  val wrdata = Output(new SpiData)
   val rddv = Input(Bool())
   val rddata = Input(UInt(p.dataBits.W))
 
