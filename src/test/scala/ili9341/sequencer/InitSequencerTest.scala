@@ -11,7 +11,7 @@ import chiseltest.internal.VerilatorBackendAnnotation
 import chiseltest.experimental.TestOptionBuilder._
 import io._
 
-class SequencerTestTb(p: SimpleIOParams) extends Module {
+class InitSequencerTestTb(p: SimpleIOParams) extends Module {
 
   val io = IO(new Bundle {
     val sio = new SimpleIO(p)
@@ -19,12 +19,12 @@ class SequencerTestTb(p: SimpleIOParams) extends Module {
 
   io := DontCare
 
-  val dut_seq = Module(new Sequencer(p))
+  val dut_seq = Module(new InitSequencer(p))
 
   dut_seq.io.sio <> io.sio
 }
 
-class CpuTest extends FlatSpec with ChiselScalatestTester with Matchers with ParallelTestExecution {
+class InitSequencerCpuTest extends FlatSpec with ChiselScalatestTester with Matchers with ParallelTestExecution {
 
   val annos = Seq(VerilatorBackendAnnotation)
   val p = new SimpleIOParams
@@ -32,7 +32,7 @@ class CpuTest extends FlatSpec with ChiselScalatestTester with Matchers with Par
   behavior of "Sequencer"
 
   it should f"be passed init test" in {
-    test(new SequencerTestTb(p)).withAnnotations(annos) { c =>
+    test(new InitSequencerTestTb(p)).withAnnotations(annos) { c =>
       c.clock.setTimeout(5000)
       c.clock.step(1000)
     }
