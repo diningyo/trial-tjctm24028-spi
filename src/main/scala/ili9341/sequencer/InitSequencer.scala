@@ -71,7 +71,13 @@ class InitSequencer(p: SimpleIOParams)
   val r_counter = Counter(Init.initcmd.length)
   val w_init_cmds = VecInit(Init.initcmd.map(_.U))
 
-  r_counter.inc
+
+  when (r_stm === State.sInit) {
+    r_counter.inc
+    when (r_counter.value === (Init.initcmd.length - 1).U) {
+      r_stm := State.sFinish
+    }
+  }
 
   // IOの接続
   val wrdata = Wire(new SpiData)

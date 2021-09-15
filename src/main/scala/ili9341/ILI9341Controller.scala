@@ -16,10 +16,10 @@ import sequencer._
   * @param baudrate ボーレート
   * @param clockFreq クロック周波数(MHz)
   */
-class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 50000, clockFreq: Int = 100) extends Module {
+class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 500000, clockFreq: Int = 100) extends Module {
   val io = IO(new SPIIO)
 
-  val m_seq = Module(new Sequencer(p))
+  val m_seq = Module(new InitSequencer(p))
   val m_spi = Module(new SPIController(baudrate, clockFreq))
 
   m_spi.io.mbus <> m_seq.io.sio

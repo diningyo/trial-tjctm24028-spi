@@ -51,8 +51,8 @@ class StatReg extends UartReg with IgnoreSeqInBundle {
   * デバッグ用のBundle
   */
 class CSRDebugIO extends Bundle {
-  val rx_fifo = Output(UInt(8.W))
-  val tx_fifo = Output(UInt(8.W))
+  val rx_fifo = Output(new SpiData)
+  val tx_fifo = Output(new SpiData)
   val stat = Output(UInt(8.W))
 }
 
@@ -60,8 +60,8 @@ class CSRDebugIO extends Bundle {
   * CSRとCtrl間のI/F
   */
 class CSR2CtrlIO extends Bundle {
-  val tx = new FIFORdIO(UInt(8.W))
-  val rx = new FIFOWrIO(UInt(8.W))
+  val tx = new FIFORdIO(new SpiData)
+  val rx = new FIFOWrIO(new SpiData)
 }
 
 /**
@@ -88,10 +88,10 @@ class CSR(sp: SimpleIOParams)(implicit debug: Boolean = false) extends Module {
   val io = IO(new CSRIO(sp))
 
   // FIFOの段数
-  val fifoDepth = 16
+  val fifoDepth = 64
 
-  val m_rx_fifo = Module(new FIFO(UInt(8.W), fifoDepth))
-  val m_tx_fifo = Module(new FIFO(UInt(8.W), fifoDepth))
+  val m_rx_fifo = Module(new FIFO(new SpiData, fifoDepth))
+  val m_tx_fifo = Module(new FIFO(new SpiData, fifoDepth))
   val w_stat = WireInit(0.U.asTypeOf(new StatReg))
 
   // レジスタのアクセス制御信号
@@ -108,7 +108,7 @@ class CSR(sp: SimpleIOParams)(implicit debug: Boolean = false) extends Module {
   // リードの制御
   io.sram.rddv := RegNext(w_rdsel_rxfifo || w_rdsel_stat, false.B)
   io.sram.rddata := RegNext(MuxCase(0.U, Seq(
-    w_rdsel_rxfifo -> m_rx_fifo.io.rd.data,
+    w_rdsel_rxfifo -> m_rx_fifo.io.rd.data.data,
     w_rdsel_stat -> w_stat.read())), 0.U)
 
   // Ctrl部との接続

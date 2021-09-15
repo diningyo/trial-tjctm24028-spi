@@ -62,7 +62,7 @@ class TxRxCtrl(baudrate: Int=9600,
 
   val dcx = RegInit(true.B)
 
-  dcx := false.B
+  dcx := Mux(io.r2c.tx.enable, io.r2c.tx.data.attr.asUInt(), false.B)
 
   io.spi.sck := Mux(!(m_tx_ctrl.io.csx && m_rx_ctrl.io.csx),  r_sck, false.B)
   io.spi.dcx := dcx//true.B  // tmp. send command only
@@ -93,8 +93,8 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
       case SPIRx => Input(UInt(1.W))
     }
     val reg = direction match {
-      case SPITx => Flipped(new FIFORdIO(UInt(8.W)))
-      case SPIRx => Flipped(new FIFOWrIO(UInt(8.W)))
+      case SPITx => Flipped(new FIFORdIO(new SpiData))
+      case SPIRx => Flipped(new FIFOWrIO(new SpiData))
     }
     val csx = Output(Bool())
   })
@@ -115,7 +115,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   // 動作開始のトリガはTx/Rxで異なるため
   // directionをmatch式で処理
   val w_start_req = direction match {
-    case SPITx => !io.reg.asInstanceOf[FIFORdIO[UInt]].empty
+    case SPITx => !io.reg.asInstanceOf[FIFORdIO[SpiData]].empty
     case SPIRx => !io.spi
   }
 
@@ -149,17 +149,17 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   // クラスパラメータのdirectionを使って各方向の論理を実装
   direction match {
     case SPITx =>
-      val reg = io.reg.asInstanceOf[FIFORdIO[UInt]]
+      val reg = io.reg.asInstanceOf[FIFORdIO[SpiData]]
 
       io.spi := MuxCase(1.U, Seq(
         m_stm.io.state.start -> 0.U,
-        m_stm.io.state.data -> reg.data(7.U - r_bit_idx)
+        m_stm.io.state.data -> reg.data.data(7.U - r_bit_idx)
       ))
 
       reg.enable := m_stm.io.state.stop && w_update_req
 
     case SPIRx =>
-      val reg = io.reg.asInstanceOf[FIFOWrIO[UInt]]
+      val reg = io.reg.asInstanceOf[FIFOWrIO[SpiData]]
       val r_rx_data = RegInit(0.U)
 
       when (m_stm.io.state.idle && w_start_req) {
@@ -170,7 +170,8 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
         }
       }
       reg.enable := w_fin
-      reg.data := r_rx_data
+      reg.data.attr := SpiAttr.Data
+      reg.data.data := r_rx_data
   }
 
   // m_stm <-> ctrlの接続
