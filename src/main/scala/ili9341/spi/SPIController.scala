@@ -22,9 +22,8 @@ class SPIIO extends Bundle {
 
 class SPIControllerIO(p: SimpleIOParams)
                (implicit debug: Boolean = false)extends Bundle {
-  val mbus = Flipped(new SimpleIO(p))
+  val mbus = Flipped(Decoupled(new SpiData))
   val spi= new SPIIO
-  val dbg = if (debug) Some(new CSRDebugIO) else None
 
   override def cloneType: this.type =
     new SPIControllerIO(p).asInstanceOf[this.type]
@@ -41,11 +40,9 @@ class SPIController(baudrate: Int, clockFreq: Int) extends Module {
 
   val io = IO(new SPIControllerIO(p))
 
-  val m_reg = Module(new CSR(p))
+  val m_tx_fifo = Queue(io.mbus)
   val m_ctrl = Module(new TxRxCtrl(baudrate, clockFreq))
 
+  m_tx_fifo <> m_ctrl.io.tx_data
   io.spi <> m_ctrl.io.spi
-
-  io.mbus <> m_reg.io.sram
-  m_reg.io.r2c <> m_ctrl.io.r2c
 }

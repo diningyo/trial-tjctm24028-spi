@@ -88,7 +88,7 @@ class CSR(sp: SimpleIOParams)(implicit debug: Boolean = false) extends Module {
   val io = IO(new CSRIO(sp))
 
   // FIFOの段数
-  val fifoDepth = 64
+  val fifoDepth = 128
 
   val m_rx_fifo = Module(new FIFO(new SpiData, fifoDepth))
   val m_tx_fifo = Module(new FIFO(new SpiData, fifoDepth))

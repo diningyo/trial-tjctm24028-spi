@@ -61,7 +61,7 @@ class InitSequencer(p: SimpleIOParams)
   import ili9341.spi.RegInfo._
 
   val io = IO(new Bundle {
-    val sio = new SimpleIO(p)
+    val sio = Decoupled(new SpiData)
   })
 
   io.sio := DontCare
@@ -72,7 +72,7 @@ class InitSequencer(p: SimpleIOParams)
   val w_init_cmds = VecInit(Init.initcmd.map(_.U))
 
 
-  when (r_stm === State.sInit) {
+  when (r_stm === State.sInit && io.sio.ready) {
     r_counter.inc
     when (r_counter.value === (Init.initcmd.length - 1).U) {
       r_stm := State.sFinish
@@ -82,9 +82,8 @@ class InitSequencer(p: SimpleIOParams)
   // IOの接続
   val wrdata = Wire(new SpiData)
   wrdata.set(w_init_cmds(r_counter.value))
-  io.sio.wren := r_stm === State.sInit
-  io.sio.wrdata := wrdata
-  io.sio.addr := txFifo.U
+  io.sio.valid := r_stm === State.sInit
+  io.sio.bits := wrdata
 }
 
 object genRTL extends App {
