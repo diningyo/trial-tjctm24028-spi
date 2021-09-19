@@ -16,7 +16,10 @@ import sequencer._
 
 class ILI9341ControllerTestTb(p: SimpleIOParams) extends Module {
 
-  val io = IO(new SPIIO)
+  val io = IO(new Bundle {
+    val spi = new SPIIO
+    val fill_button = Input(Bool())
+  })
 
   io := DontCare
 

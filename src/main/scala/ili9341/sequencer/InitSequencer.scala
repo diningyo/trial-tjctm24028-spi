@@ -61,6 +61,7 @@ class InitSequencer(p: SimpleIOParams)
   import ili9341.spi.RegInfo._
 
   val io = IO(new Bundle {
+    val fill_button = Input(Bool())
     val sio = Decoupled(new SpiData)
   })
 
