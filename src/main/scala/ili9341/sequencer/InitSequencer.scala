@@ -8,19 +8,28 @@ import chisel3.util._
 import chisel3.experimental.ChiselEnum
 
 import io._
+import treadle.Command
 
 /**
   * Sequencerのステート
   */
 object State extends ChiselEnum {
   val sInit = Value
+  val sIdle = Value
+  val sFill = Value
   val sFinish = Value
+}
+
+object FillState extends ChiselEnum {
+  val sCASET = Value
+  val sPASET = Value
+  val sRAMWR = Value
 }
 
 object Init {
   import Commands._
 
-  val initcmd = Seq(
+  val initCmdSequence = Seq(
   ILI9341_0xEF,     0x03, 0x80, 0x02,
   ILI9341_0xCF,     0x00, 0xC1, 0x30,
   ILI9341_0xED,     0x64, 0x03, 0x12, 0x81,
@@ -44,8 +53,6 @@ object Init {
   ILI9341_SLPOUT,   0x80,                // Exit Sleep
   ILI9341_DISPON,   0x80                 // Display on
   )
-
-
 }
 
 
@@ -69,21 +76,121 @@ class InitSequencer(p: SimpleIOParams)
 
   // ステートマシン
   val r_stm = RegInit(State.sInit)
-  val r_counter = Counter(Init.initcmd.length)
-  val w_init_cmds = VecInit(Init.initcmd.map(_.U))
-
+  val r_counter = Counter(Init.initCmdSequence.length)
+  val w_init_cmds = VecInit(Init.initCmdSequence.map(_.U))
+  val w_finish_fill = WireDefault(false.B)
 
   when (r_stm === State.sInit && io.sio.ready) {
     r_counter.inc
-    when (r_counter.value === (Init.initcmd.length - 1).U) {
-      r_stm := State.sFinish
+    when (r_counter.value === (Init.initCmdSequence.length - 1).U) {
+      r_stm := State.sIdle
     }
   }
 
+  when (r_stm === State.sInit && r_counter.value === (Init.initCmdSequence.length - 1).U) {
+    r_stm := State.sIdle
+  }.elsewhen (r_stm === State.sIdle) {
+    //when (io.fill_button) {
+      r_stm := State.sFill
+    //}
+  }.elsewhen (r_stm === State.sFill) {
+    when (w_finish_fill) {
+      r_stm := State.sIdle
+    }
+  }
+
+  val color = 0x0123
+  val width = 240
+  val height = 320
+
+  // Fill
+  val r_cmd_ctr = RegInit(0.U(3.W))
+  val r_width_ctr = Counter(width)
+  val r_height_ctr = Counter(height)
+  val w_last_horizontal = r_height_ctr.value === (height - 1).U
+  val w_last_vertical = r_width_ctr.value === (width - 1).U
+  val w_done_cmd = r_cmd_ctr === 4.U
+  val w_done_ramwr = r_cmd_ctr === 2.U
+  val r_fill_stm = RegInit(FillState.sCASET)
+
+  r_width_ctr.value.suggestName("r_width_ctr")
+
+  when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_done_ramwr)) {
+    r_height_ctr.inc
+    when (w_last_horizontal) {
+      r_width_ctr.inc
+    }
+  }
+
+  w_finish_fill := w_last_horizontal && w_last_vertical
+
+  when (r_stm === State.sFill) {
+    when ((r_fill_stm === FillState.sRAMWR && w_done_ramwr) ||
+          (r_fill_stm =/= FillState.sRAMWR && w_done_cmd)) {
+      r_cmd_ctr := 0.U
+    }.otherwise {
+      r_cmd_ctr := r_cmd_ctr + 1.U
+    }
+  }
+
+  when (r_fill_stm === FillState.sCASET) {
+    when (w_done_cmd) {
+      r_fill_stm := FillState.sPASET
+    }
+  }.elsewhen (r_fill_stm === FillState.sPASET) {
+    when (w_done_cmd) {
+      r_fill_stm := FillState.sRAMWR
+    }
+  }.otherwise {
+    when (w_done_ramwr) {
+      r_fill_stm := FillState.sCASET
+    }
+  }
+
+  val w_x_start = r_height_ctr.value
+  val w_x_end = w_x_start + 1.U
+  val w_y_start = r_width_ctr.value
+  val w_y_end = w_y_start + 1.U
+
   // IOの接続
   val wrdata = Wire(new SpiData)
-  wrdata.set(w_init_cmds(r_counter.value))
-  io.sio.valid := r_stm === State.sInit
+
+  when (r_stm === State.sInit) {
+    wrdata.set(w_init_cmds(r_counter.value))
+  }.otherwise {
+    when (r_fill_stm === FillState.sCASET) {
+      when (r_cmd_ctr === 0.U) {
+        wrdata.set(Commands.ILI9341_CASET.U)
+      }.otherwise {
+        wrdata.attr := SpiAttr.Data
+        when (r_cmd_ctr >= 3.U) {
+          wrdata.data := w_x_end >> (r_cmd_ctr(0) << 3.U)
+        }.otherwise {
+          wrdata.data := w_x_start >> (r_cmd_ctr(0) << 3.U)
+        }
+      }
+    }.elsewhen (r_fill_stm === FillState.sPASET) {
+      when (r_cmd_ctr === 0.U) {
+        wrdata.set(Commands.ILI9341_PASET.U)
+      }.otherwise {
+        wrdata.attr := SpiAttr.Data
+        when (r_cmd_ctr >= 3.U) {
+          wrdata.data := w_y_end >> (r_cmd_ctr(0) << 3.U)
+        }.otherwise {
+          wrdata.data := w_y_start >> (r_cmd_ctr(0) << 3.U)
+        }
+      }
+    }.otherwise {
+      when (r_cmd_ctr === 0.U) {
+        wrdata.set(Commands.ILI9341_RAMWR.U)
+      }.otherwise {
+        wrdata.attr := SpiAttr.Data
+        wrdata.data := color.U >> (r_cmd_ctr(0) << 3.U)
+      }
+    }
+  }
+
+  io.sio.valid := (r_stm === State.sInit) || (r_stm === State.sFill)
   io.sio.bits := wrdata
 }
 
