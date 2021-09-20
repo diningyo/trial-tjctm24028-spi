@@ -18,7 +18,7 @@ case class SimpleIOParams
   )
 
 object SpiAttr extends ChiselEnum {
-  val Cmd, Data = Value
+  val Data, Cmd = Value
 }
 
 class SpiData extends Bundle {
