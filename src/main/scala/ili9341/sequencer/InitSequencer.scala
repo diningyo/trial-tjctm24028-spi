@@ -113,7 +113,7 @@ class InitSequencer(p: SimpleIOParams)
   val w_done_ramwr = r_cmd_ctr === 2.U
   val r_fill_stm = RegInit(FillState.sCASET)
 
-  when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_done_ramwr)) {
+  when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_done_ramwr && io.sio.fire())) {
     r_height_ctr.inc
     when (w_last_horizontal) {
       r_width_ctr.inc
@@ -123,31 +123,33 @@ class InitSequencer(p: SimpleIOParams)
   w_finish_fill := w_last_horizontal && w_last_vertical
 
   when (r_stm === State.sFill) {
-    when ((r_fill_stm === FillState.sRAMWR && w_done_ramwr) ||
-          (r_fill_stm =/= FillState.sRAMWR && w_done_cmd)) {
-      r_cmd_ctr := 0.U
-    }.otherwise {
-      r_cmd_ctr := r_cmd_ctr + 1.U
+    when (io.sio.fire()) {
+      when ((r_fill_stm === FillState.sRAMWR && w_done_ramwr) ||
+            (r_fill_stm =/= FillState.sRAMWR && w_done_cmd)) {
+        r_cmd_ctr := 0.U
+      }.otherwise {
+        r_cmd_ctr := r_cmd_ctr + 1.U
+      }
     }
   }
 
   when (r_fill_stm === FillState.sCASET) {
-    when (w_done_cmd) {
+    when (w_done_cmd && io.sio.fire()) {
       r_fill_stm := FillState.sPASET
     }
   }.elsewhen (r_fill_stm === FillState.sPASET) {
-    when (w_done_cmd) {
+    when (w_done_cmd && io.sio.fire()) {
       r_fill_stm := FillState.sRAMWR
     }
-  }.otherwise {
-    when (w_done_ramwr) {
+  }.elsewhen (r_fill_stm === FillState.sRAMWR) {
+    when (w_done_ramwr && io.sio.fire()) {
       r_fill_stm := FillState.sCASET
     }
   }
 
-  val w_x_start = r_height_ctr.value
+  val w_x_start = r_width_ctr.value
   val w_x_end = w_x_start + 1.U
-  val w_y_start = r_width_ctr.value
+  val w_y_start = r_height_ctr.value
   val w_y_end = w_y_start + 1.U
 
   // IOの接続
