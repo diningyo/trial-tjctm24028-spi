@@ -48,10 +48,14 @@ class TxRxCtrl(baudrate: Int=9600,
     r_sck_ctr := 0.U
   }
 
-  val r_sck = RegInit(true.B)
+  val r_sck = RegInit(false.B)
 
-  when (r_sck_ctr === (durationCount / 2).U) {
-    r_sck := !r_sck
+  when (!m_tx_ctrl.io.csx) {
+    when (r_sck_ctr === (durationCount / 2).U) {
+      r_sck := !r_sck
+    }
+  }.otherwise {
+    r_sck := false.B
   }
 
   val r_debug_clk = RegInit(0.U(32.W))
