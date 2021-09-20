@@ -16,10 +16,11 @@ import sequencer._
   * @param baudrate ボーレート
   * @param clockFreq クロック周波数(MHz)
   */
-class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 1000000, clockFreq: Int = 100) extends Module {
+class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 500000, clockFreq: Int = 100) extends Module {
   val io = IO(new Bundle {
     val spi = new SPIIO
     val fill_button = Input(Bool())
+    val init_done = Output(Bool())
   })
 
   //val r_fill_bottun = RegInit(VecInit(Seq.fill(3)(true.B)))
@@ -28,6 +29,7 @@ class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 1000000, clockFreq: I
 
   m_spi.io.mbus <> m_seq.io.sio
   m_seq.io.fill_button := io.fill_button
+  io.init_done := m_seq.io.init_done
   io.spi <> m_spi.io.spi
 }
 

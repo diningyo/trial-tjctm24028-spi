@@ -68,8 +68,9 @@ class InitSequencer(p: SimpleIOParams)
   import ili9341.spi.RegInfo._
 
   val io = IO(new Bundle {
-    val fill_button = Input(Bool())
     val sio = Decoupled(new SpiData)
+    val fill_button = Input(Bool())
+    val init_done = Output(Bool())
   })
 
   io.sio := DontCare
@@ -90,16 +91,16 @@ class InitSequencer(p: SimpleIOParams)
   when (r_stm === State.sInit && r_counter.value === (Init.initCmdSequence.length - 1).U) {
     r_stm := State.sIdle
   }.elsewhen (r_stm === State.sIdle) {
-    //when (io.fill_button) {
+    when (io.fill_button) {
       r_stm := State.sFill
-    //}
+    }
   }.elsewhen (r_stm === State.sFill) {
     when (w_finish_fill) {
       r_stm := State.sIdle
     }
   }
 
-  val color = 0x0123
+  val color = 0xffff
   val width = 240
   val height = 320
 
@@ -112,8 +113,6 @@ class InitSequencer(p: SimpleIOParams)
   val w_done_cmd = r_cmd_ctr === 4.U
   val w_done_ramwr = r_cmd_ctr === 2.U
   val r_fill_stm = RegInit(FillState.sCASET)
-
-  r_width_ctr.value.suggestName("r_width_ctr")
 
   when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_done_ramwr)) {
     r_height_ctr.inc
@@ -192,6 +191,7 @@ class InitSequencer(p: SimpleIOParams)
 
   io.sio.valid := (r_stm === State.sInit) || (r_stm === State.sFill)
   io.sio.bits := wrdata
+  io.init_done := !(r_stm === State.sInit)
 }
 
 object genRTL extends App {
