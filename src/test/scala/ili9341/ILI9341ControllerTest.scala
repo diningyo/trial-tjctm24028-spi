@@ -24,7 +24,7 @@ class ILI9341ControllerTestTb(p: SimpleIOParams, baudrate: Int = 500000, clockFr
 
   io := DontCare
 
-  val dut_ctrl = Module(new ILI9341Controller(p))
+  val dut_ctrl = Module(new ILI9341Controller(p, baudrate))
 
   io <> dut_ctrl.io
 }
@@ -37,8 +37,8 @@ class ILI9341ControllerTest extends FlatSpec with ChiselScalatestTester with Mat
   behavior of "ILI9341Controller"
 
   it should f"be passed init test" in {
-    test(new ILI9341ControllerTestTb(p, 1000000)).withAnnotations(annos) { c =>
-      c.clock.setTimeout(500000)
+    test(new ILI9341ControllerTestTb(p, 5000000)).withAnnotations(annos) { c =>
+      c.clock.setTimeout(10000000)
 
       println(s"${c.io.init_done.peek.litToBoolean}")
       println(s"init_done = ${c.io.init_done.peek().litValue()}")
@@ -53,7 +53,7 @@ class ILI9341ControllerTest extends FlatSpec with ChiselScalatestTester with Mat
       c.clock.step(1000)
 
       c.io.fill_button.poke(true.B)
-      c.clock.step(50000)
+      c.clock.step(1000000)
     }
   }
 }

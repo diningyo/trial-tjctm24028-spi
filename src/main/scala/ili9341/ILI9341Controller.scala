@@ -37,7 +37,7 @@ object genRTL extends App {
   val name = "ILI9341Controller"
   val p = SimpleIOParams()
   val rtl = (new ChiselStage).emitVerilog(
-      new ILI9341Controller(p),
+      new ILI9341Controller(p, 2000000),
       Array(
         "-td=rtl", s"-o=$name"
       ))

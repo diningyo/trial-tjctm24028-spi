@@ -99,7 +99,7 @@ class InitSequencer(p: SimpleIOParams)
     }
   }
 
-  val color = 0xffff
+  val color = 0x0a0a
   val width = 240
   val height = 320
 
