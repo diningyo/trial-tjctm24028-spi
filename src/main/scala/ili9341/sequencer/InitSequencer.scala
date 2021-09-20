@@ -91,9 +91,7 @@ class InitSequencer(p: SimpleIOParams)
       r_stm := State.sIdle
     }
   }.elsewhen (r_stm === State.sIdle) {
-    when (io.fill_button) {
-      r_stm := State.sFill
-    }
+    r_stm := State.sFill
   }.elsewhen (r_stm === State.sFill) {
     when (w_finish_fill) {
       r_stm := State.sIdle
