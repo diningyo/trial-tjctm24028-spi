@@ -44,6 +44,8 @@ class TxRxCtrl(baudrate: Int=9600,
     }.otherwise {
       r_sck_ctr := r_sck_ctr + 1.U
     }
+  }.otherwise {
+    r_sck_ctr := 0.U
   }
 
   val r_sck = RegInit(true.B)
