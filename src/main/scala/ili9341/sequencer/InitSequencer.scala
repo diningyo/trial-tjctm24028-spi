@@ -9,6 +9,7 @@ import chisel3.experimental.ChiselEnum
 
 import io._
 import treadle.Command
+import java.sql.Statement
 
 /**
   * Sequencerのステート
@@ -99,9 +100,14 @@ class InitSequencer(p: SimpleIOParams)
     }
   }
 
-  val color = 0x0f00
+  val color_table = WireDefault(VecInit(Seq(0xf000, 0x0f00, 0x00f0, 0x000f).map(_.U)))
+  val r_color_counter = Counter(4)
   val width = 240
   val height = 320
+
+  when (r_stm === State.sFill && w_finish_fill) {
+    r_color_counter.inc
+  }
 
   // Fill
   val r_cmd_ctr = RegInit(0.U(3.W))
@@ -185,7 +191,7 @@ class InitSequencer(p: SimpleIOParams)
         wrdata.set(Commands.ILI9341_RAMWR.U)
       }.otherwise {
         wrdata.attr := SpiAttr.Data
-        wrdata.data := color.U >> (r_cmd_ctr(0) << 3.U)
+        wrdata.data := color_table(r_color_counter.value) >> (r_cmd_ctr(0) << 3.U)
       }
     }
   }
