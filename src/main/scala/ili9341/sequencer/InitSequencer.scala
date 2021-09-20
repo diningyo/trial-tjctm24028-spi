@@ -83,13 +83,12 @@ class InitSequencer(p: SimpleIOParams)
 
   when (r_stm === State.sInit && io.sio.ready) {
     r_counter.inc
-    when (r_counter.value === (Init.initCmdSequence.length - 1).U) {
-      r_stm := State.sIdle
-    }
   }
 
-  when (r_stm === State.sInit && r_counter.value === (Init.initCmdSequence.length - 1).U) {
-    r_stm := State.sIdle
+  when (r_stm === State.sInit) {
+    when (r_counter.value === (Init.initCmdSequence.length - 1).U && io.sio.ready) {
+      r_stm := State.sIdle
+    }
   }.elsewhen (r_stm === State.sIdle) {
     when (io.fill_button) {
       r_stm := State.sFill
