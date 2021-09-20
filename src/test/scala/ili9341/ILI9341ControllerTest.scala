@@ -14,11 +14,12 @@ import io._
 import spi._
 import sequencer._
 
-class ILI9341ControllerTestTb(p: SimpleIOParams) extends Module {
+class ILI9341ControllerTestTb(p: SimpleIOParams, baudrate: Int = 500000, clockFreq: Int = 100) extends Module {
 
   val io = IO(new Bundle {
     val spi = new SPIIO
     val fill_button = Input(Bool())
+    val init_done = Output(Bool())
   })
 
   io := DontCare
@@ -36,9 +37,23 @@ class ILI9341ControllerTest extends FlatSpec with ChiselScalatestTester with Mat
   behavior of "ILI9341Controller"
 
   it should f"be passed init test" in {
-    test(new ILI9341ControllerTestTb(p)).withAnnotations(annos) { c =>
+    test(new ILI9341ControllerTestTb(p, 1000000)).withAnnotations(annos) { c =>
       c.clock.setTimeout(500000)
-      c.clock.step(100000)
+
+      println(s"${c.io.init_done.peek.litToBoolean}")
+      println(s"init_done = ${c.io.init_done.peek().litValue()}")
+      while (!c.io.init_done.peek.litToBoolean) {
+        c.clock.step(1)
+      }
+
+      println(s"${c.io.init_done.peek.litToBoolean}")
+      println(s"init_done = ${c.io.init_done.peek().litValue()}")
+
+      println("init done!!")
+      c.clock.step(1000)
+
+      c.io.fill_button.poke(true.B)
+      c.clock.step(50000)
     }
   }
 }
