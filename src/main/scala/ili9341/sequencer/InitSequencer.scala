@@ -124,7 +124,7 @@ class InitSequencer(p: SimpleIOParams)
     }
   }
 
-  w_finish_fill := w_last_horizontal && w_last_vertical
+  w_finish_fill := w_last_horizontal && w_last_vertical && io.sio.fire()
 
   when (r_stm === State.sFill) {
     when (io.sio.fire()) {

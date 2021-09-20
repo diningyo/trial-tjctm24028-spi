@@ -36,42 +36,12 @@ class TxRxCtrl(baudrate: Int=9600,
   val m_tx_ctrl = Module(new Ctrl(SPITx, durationCount))
   //val m_rx_ctrl = Module(new Ctrl(SPIRx, durationCount))
 
-  val r_sck_ctr = RegInit(0.U(32.W))
-
-  when (!m_tx_ctrl.io.csx) {
-    when (r_sck_ctr === (durationCount / 2).U) {
-      r_sck_ctr := 0.U
-    }.otherwise {
-      r_sck_ctr := r_sck_ctr + 1.U
-    }
-  }.otherwise {
-    r_sck_ctr := 0.U
-  }
-
-  val r_sck = RegInit(false.B)
-
-  when (!m_tx_ctrl.io.csx) {
-    when (r_sck_ctr === (durationCount / 2).U) {
-      r_sck := !r_sck
-    }
-  }.otherwise {
-    r_sck := false.B
-  }
-
-  val r_debug_clk = RegInit(0.U(32.W))
-
-  when (r_debug_clk === (durationCount / 2).U) {
-    r_debug_clk := 0.U
-  }.otherwise {
-    r_debug_clk := r_debug_clk + 1.U
-  }
-
-  io.spi.debug_clk := r_debug_clk === (durationCount / 2).U
+  io.spi.debug_clk := false.B
 
   val dcx = RegInit(true.B)
 
   //io.spi.sck := Mux(!(m_tx_ctrl.io.csx && m_rx_ctrl.io.csx),  r_sck, false.B)
-  io.spi.sck := Mux(!m_tx_ctrl.io.csx, r_sck, false.B)
+  io.spi.sck := m_tx_ctrl.io.sck
   io.spi.dcx := !io.tx_data.bits.attr.asUInt()//true.B  // tmp. send command only
   io.spi.led := true.B
 
@@ -105,6 +75,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
       case SPIRx => Flipped(Decoupled(new SpiData))
     }
     val csx = Output(Bool())
+    val sck = Output(Bool())
   })
 
   val m_stm = Module(new CtrlStateMachine)
@@ -118,7 +89,17 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
     case SPIRx => durationCount / 2
   }
 
-  io.csx := !m_stm.io.state.data
+  io.csx := !(m_stm.io.state.data || m_stm.io.state.stop)
+
+  val r_sck = RegInit(false.B)
+
+  when (m_stm.io.state.data) {
+    when (r_duration_ctr === (durationCount - 1).U || r_duration_ctr === (durationCount / 2).U) {
+      r_sck := !r_sck
+    }
+  }
+
+  io.sck := r_sck
 
   // 動作開始のトリガはTx/Rxで異なるため
   // directionをmatch式で処理
@@ -127,7 +108,9 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
     case SPIRx => !io.spi
   }
 
-  val w_update_req = r_duration_ctr === (durationCount - 1).U
+  val w_update_req = Mux(m_stm.io.state.data,
+    r_duration_ctr === (durationCount - 1).U,
+    r_duration_ctr === ((durationCount / 2) - 1).U)
   val w_fin = m_stm.io.state.stop && w_update_req
 
   // アイドル時の制御
