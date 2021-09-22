@@ -119,9 +119,6 @@ class InitSequencer(p: SimpleIOParams)
 
   when (r_stm === State.sFill && r_fill_stm === FillState.sRAMWR && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
     r_height_ctr.inc
-    when (w_last_horizontal) {
-      r_width_ctr.inc
-    }
   }
 
   when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire())) {
@@ -150,16 +147,14 @@ class InitSequencer(p: SimpleIOParams)
       r_fill_stm := FillState.sRAMWR
     }
   }.elsewhen (r_fill_stm === FillState.sRAMWR) {
-    when (w_done_ramwr && io.sio.fire()) {
-      when (w_last_vertical) {
-        r_fill_stm := FillState.sPASET
-      }
+    when (w_last_horizontal && io.sio.fire()) {
+      r_fill_stm := FillState.sPASET
     }
   }
 
   val w_x_start = r_width_ctr.value
   val w_x_end = w_x_start + 1.U
-  val w_y_start = r_height_ctr.value
+  val w_y_start = r_width_ctr.value
   val w_y_end = w_y_start + 1.U
 
   // IOの接続
