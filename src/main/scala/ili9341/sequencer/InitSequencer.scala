@@ -98,38 +98,40 @@ class InitSequencer(p: SimpleIOParams)
     }
   }
 
-  val color_table = WireDefault(VecInit(Seq(0xf000, 0x0f00, 0x00f0, 0x000f).map(_.U)))
-  val r_color_counter = Counter(4)
+  val color_table = WireDefault(VecInit(Color.table.map(_.U)))
+  val r_color_counter = Counter(Color.table.length)
   val width = 240
   val height = 320
 
-  when (r_stm === State.sFill && w_finish_fill) {
-    r_color_counter.inc
-  }
-
   // Fill
   val r_cmd_ctr = RegInit(0.U(10.W))
-  val r_width_ctr = Counter(width + 240)
+  val r_width_ctr = Counter(width)
   val r_height_ctr = Counter(height)
-  val w_last_horizontal = r_width_ctr.value === ((width + 240) - 1).U
+  val w_last_horizontal = r_width_ctr.value === (width - 1).U
   val w_last_vertical = r_height_ctr.value === (height - 1).U
   val w_done_cmd = r_cmd_ctr === 4.U
   val w_done_ramwr = r_cmd_ctr === 2.U
   val r_fill_stm = RegInit(FillState.sCASET)
 
-  when (r_stm === State.sFill && r_fill_stm === FillState.sRAMWR && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
-    r_width_ctr.inc
+  when (r_stm === State.sFill && w_finish_fill) {
+    r_color_counter.inc
   }
 
-  when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire())) {
+  when (r_stm === State.sFill && r_fill_stm === FillState.sRAMWR && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
+    when (r_cmd_ctr(0)) {
+      r_width_ctr.inc
+    }
+  }
+
+  when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire() && r_cmd_ctr(0))) {
     r_height_ctr.inc
   }
 
-  w_finish_fill := w_last_horizontal && w_last_vertical && io.sio.fire()
+  w_finish_fill := w_last_horizontal && w_last_vertical && io.sio.fire() && r_cmd_ctr(0)
 
   when (r_stm === State.sFill) {
     when (io.sio.fire()) {
-      when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal) ||
+      when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal && r_cmd_ctr(0)) ||
             (r_fill_stm =/= FillState.sRAMWR && w_done_cmd)) {
         r_cmd_ctr := 0.U
       }.otherwise {
@@ -147,7 +149,7 @@ class InitSequencer(p: SimpleIOParams)
       r_fill_stm := FillState.sRAMWR
     }
   }.elsewhen (r_fill_stm === FillState.sRAMWR) {
-    when (w_last_horizontal && io.sio.fire()) {
+    when (w_last_horizontal && io.sio.fire() && r_cmd_ctr(0)) {
       r_fill_stm := FillState.sPASET
     }
   }
