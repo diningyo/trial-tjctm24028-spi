@@ -109,20 +109,20 @@ class InitSequencer(p: SimpleIOParams)
 
   // Fill
   val r_cmd_ctr = RegInit(0.U(10.W))
-  val r_width_ctr = Counter(width)
+  val r_width_ctr = Counter(width + 240)
   val r_height_ctr = Counter(height)
-  val w_last_horizontal = r_height_ctr.value === (height - 1).U
-  val w_last_vertical = r_width_ctr.value === (width - 1).U
+  val w_last_horizontal = r_width_ctr.value === ((width + 240) - 1).U
+  val w_last_vertical = r_height_ctr.value === (height - 1).U
   val w_done_cmd = r_cmd_ctr === 4.U
   val w_done_ramwr = r_cmd_ctr === 2.U
   val r_fill_stm = RegInit(FillState.sCASET)
 
   when (r_stm === State.sFill && r_fill_stm === FillState.sRAMWR && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
-    r_height_ctr.inc
+    r_width_ctr.inc
   }
 
   when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire())) {
-    r_width_ctr.inc
+    r_height_ctr.inc
   }
 
   w_finish_fill := w_last_horizontal && w_last_vertical && io.sio.fire()
@@ -152,7 +152,7 @@ class InitSequencer(p: SimpleIOParams)
     }
   }
 
-  val w_x_start = r_width_ctr.value
+  val w_x_start = r_height_ctr.value
   val w_x_end = w_x_start + 1.U
   val w_y_start = r_width_ctr.value
   val w_y_end = w_y_start + 1.U
@@ -169,7 +169,7 @@ class InitSequencer(p: SimpleIOParams)
       }.otherwise {
         wrdata.attr := SpiAttr.Data
         when (r_cmd_ctr >= 3.U) {
-          wrdata.data := (height - 1).U >> (r_cmd_ctr(0) << 3.U)
+          wrdata.data := (width - 1).U >> (r_cmd_ctr(0) << 3.U)
         }.otherwise {
           wrdata.data := 0.U
         }
@@ -179,7 +179,7 @@ class InitSequencer(p: SimpleIOParams)
         wrdata.set(Commands.ILI9341_PASET.U)
       }.otherwise {
         wrdata.attr := SpiAttr.Data
-        wrdata.data := w_y_start >> (r_cmd_ctr(0) << 3.U)
+        wrdata.data := w_x_start >> (r_cmd_ctr(0) << 3.U)
       }
     }.otherwise {
       when (r_cmd_ctr === 0.U) {
