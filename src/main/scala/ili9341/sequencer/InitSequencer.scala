@@ -144,20 +144,20 @@ class InitSequencer(p: SimpleIOParams)
   }
 
   when (r_stm === State.sFill && r_fill_stm === FillState.sRAMWR && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
-    when (r_cmd_ctr(0)) {
+    when (!r_cmd_ctr(0)) {
       r_width_ctr.inc
     }
   }
 
-  when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire() && r_cmd_ctr(0))) {
+  when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire() && !r_cmd_ctr(0))) {
     r_height_ctr.inc
   }
 
-  w_finish_fill := w_last_horizontal && w_last_vertical && io.sio.fire() && r_cmd_ctr(0)
+  w_finish_fill := w_last_horizontal && w_last_vertical && io.sio.fire() && !r_cmd_ctr(0)
 
   when (r_stm === State.sFill) {
     when (io.sio.fire()) {
-      when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal && r_cmd_ctr(0)) ||
+      when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal && !r_cmd_ctr(0)) ||
             (r_fill_stm =/= FillState.sRAMWR && w_done_cmd)) {
         r_cmd_ctr := 0.U
       }.otherwise {
@@ -175,7 +175,7 @@ class InitSequencer(p: SimpleIOParams)
       r_fill_stm := FillState.sRAMWR
     }
   }.elsewhen (r_fill_stm === FillState.sRAMWR) {
-    when (w_last_horizontal && io.sio.fire() && r_cmd_ctr(0)) {
+    when (w_last_horizontal && io.sio.fire() && !r_cmd_ctr(0)) {
       r_fill_stm := FillState.sPASET
     }
   }
