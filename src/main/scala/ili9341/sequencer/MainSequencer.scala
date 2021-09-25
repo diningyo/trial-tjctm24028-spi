@@ -29,7 +29,7 @@ class MainSequencer(p: SimpleIOParams)
   io.sio := DontCare
 
   val m_init_seq = Module(new InitSequencer(p))
-  //val m_fill_seq = Module(new
+  val m_fill_seq = Module(new FillSequencer(p))
 
   // ステートマシン
   val r_stm = RegInit(State.sInit)
@@ -49,10 +49,10 @@ class MainSequencer(p: SimpleIOParams)
     }
   }
 
-
   // IOの接続
-  val wrdata = Wire(new SpiData)
-  wrdata := w_init_cmds(r_counter.value)
-  io.sio.valid := r_stm =/= State.sIdle
-  io.sio.bits := m_init_seq.io.sio.bits
+  when (r_stm === State.sInit) {
+    io.sio <> m_init_seq.sio
+  }.otherwise {
+    io.sio <> m_fill_seq.sio
+  }
 }
