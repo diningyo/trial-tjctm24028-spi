@@ -14,13 +14,6 @@ import java.sql.Statement
 /**
   * Sequencerのステート
   */
-object State extends ChiselEnum {
-  val sInit = Value
-  val sIdle = Value
-  val sFill = Value
-  val sFinish = Value
-}
-
 object FillState extends ChiselEnum {
   val sCASET = Value
   val sPASET = Value
