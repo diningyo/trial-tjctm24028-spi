@@ -24,9 +24,9 @@ class MainSequencer(p: SimpleIOParams)
 
   val io = IO(new Bundle {
     val sio = Decoupled(new SpiData)
+    val fill_button = Input(Bool())
+    val init_done = Output(Bool())
   })
-
-  io.sio := DontCare
 
   val m_init_seq = Module(new InitSequencer(p))
   val m_fill_seq = Module(new FillSequencer(p))
@@ -44,15 +44,21 @@ class MainSequencer(p: SimpleIOParams)
       r_stm := State.sFill
     }
   }.elsewhen (r_stm === State.sFill) {
-    when (w_fill_done) {
+    when (m_fill_seq.io.fill_done) {
       r_stm := State.sIdle
     }
   }
 
   // IOの接続
+  m_fill_seq.io.fill_button := io.fill_button
+  m_init_seq.io.sio.ready := false.B
+  m_fill_seq.io.sio.ready := false.B
+
   when (r_stm === State.sInit) {
-    io.sio <> m_init_seq.sio
+    io.sio <> m_init_seq.io.sio
   }.otherwise {
-    io.sio <> m_fill_seq.sio
+    io.sio <> m_fill_seq.io.sio
   }
+
+  io.init_done := m_init_seq.io.init_done
 }

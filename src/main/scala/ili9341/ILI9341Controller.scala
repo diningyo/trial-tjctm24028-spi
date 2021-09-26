@@ -24,7 +24,7 @@ class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 1000000, clockFreq: I
   })
 
   //val r_fill_bottun = RegInit(VecInit(Seq.fill(3)(true.B)))
-  val m_seq = Module(new InitSequencer(p))
+  val m_seq = Module(new MainSequencer(p))
   val m_spi = Module(new SPIController(baudrate, clockFreq))
 
   m_spi.io.mbus <> m_seq.io.sio

@@ -15,6 +15,7 @@ import java.sql.Statement
   * Sequencerのステート
   */
 object FillState extends ChiselEnum {
+  val sIDLE = Value
   val sCASET = Value
   val sPASET = Value
   val sRAMWR = Value
@@ -48,7 +49,7 @@ object Color {
 
 
 /**
-  * Uartのデータをループバックするシーケンサー
+  * 画面を塗りつぶすシーケンサー
   * @param p SimpleIOParamsのインスタンス
   * @param debug trueでデバッグポートが追加される
   */
@@ -67,27 +68,7 @@ class FillSequencer(p: SimpleIOParams)
   io.sio := DontCare
 
   // ステートマシン
-  val r_stm = RegInit(State.sInit)
-  val r_counter = Counter(Init.initCmdSequence.length)
-  val w_init_cmds = VecInit(Init.initCmdSequence.map(_.U))
   val w_finish_fill = WireDefault(false.B)
-
-  when (r_stm === State.sInit && io.sio.ready) {
-    r_counter.inc
-  }
-
-  when (r_stm === State.sInit) {
-    when (r_counter.value === (Init.initCmdSequence.length - 1).U && io.sio.ready) {
-      r_stm := State.sIdle
-    }
-  }.elsewhen (r_stm === State.sIdle) {
-    r_stm := State.sFill
-  }.elsewhen (r_stm === State.sFill) {
-    when (w_finish_fill) {
-      r_stm := State.sIdle
-    }
-  }
-
   val color_table = WireDefault(VecInit(Color.table.map(_.U)))
   val r_color_counter = Counter(Color.table.length)
   val width = 240
@@ -102,31 +83,31 @@ class FillSequencer(p: SimpleIOParams)
   val w_done_cmd = r_cmd_ctr === 4.U
   val w_done_ramwr = r_cmd_ctr === 2.U
   val r_fill_stm = RegInit(FillState.sCASET)
+  val w_running = r_fill_stm =/= FillState.sIDLE
 
-  when (r_stm === State.sFill && w_finish_fill) {
+  when (w_running && w_finish_fill) {
     r_color_counter.inc
   }
 
-  when (r_stm === State.sFill && r_fill_stm === FillState.sRAMWR && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
+  when (w_running && r_fill_stm === FillState.sRAMWR && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
     when (!r_cmd_ctr(0)) {
       r_width_ctr.inc
     }
   }
 
-  when (r_stm === State.sFill && (r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire() && !r_cmd_ctr(0))) {
+  when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire() && !r_cmd_ctr(0))) {
     r_height_ctr.inc
   }
 
   w_finish_fill := w_last_horizontal && w_last_vertical && io.sio.fire() && !r_cmd_ctr(0)
 
-  when (r_stm === State.sFill) {
-    when (io.sio.fire()) {
-      when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal && !r_cmd_ctr(0)) ||
-            (r_fill_stm =/= FillState.sRAMWR && w_done_cmd)) {
-        r_cmd_ctr := 0.U
-      }.otherwise {
-        r_cmd_ctr := r_cmd_ctr + 1.U
-      }
+
+  when (io.sio.fire()) {
+    when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal && !r_cmd_ctr(0)) ||
+      (r_fill_stm =/= FillState.sRAMWR && w_done_cmd)) {
+      r_cmd_ctr := 0.U
+    }.otherwise {
+      r_cmd_ctr := r_cmd_ctr + 1.U
     }
   }
 
@@ -152,40 +133,36 @@ class FillSequencer(p: SimpleIOParams)
   // IOの接続
   val wrdata = Wire(new SpiData)
 
-  when (r_stm === State.sInit) {
-    wrdata.set(w_init_cmds(r_counter.value))
-  }.otherwise {
-    when (r_fill_stm === FillState.sCASET) {
-      when (r_cmd_ctr === 0.U) {
-        wrdata.set(Commands.ILI9341_CASET.U)
-      }.otherwise {
-        wrdata.attr := SpiAttr.Data
-        when (r_cmd_ctr >= 3.U) {
-          wrdata.data := (width - 1).U >> (r_cmd_ctr(0) << 3.U)
-        }.otherwise {
-          wrdata.data := 0.U
-        }
-      }
-    }.elsewhen (r_fill_stm === FillState.sPASET) {
-      when (r_cmd_ctr === 0.U) {
-        wrdata.set(Commands.ILI9341_PASET.U)
-      }.otherwise {
-        wrdata.attr := SpiAttr.Data
-        wrdata.data := w_x_start >> (r_cmd_ctr(0) << 3.U)
-      }
+  when (r_fill_stm === FillState.sCASET) {
+    when (r_cmd_ctr === 0.U) {
+      wrdata.set(Commands.ILI9341_CASET.U)
     }.otherwise {
-      when (r_cmd_ctr === 0.U) {
-        wrdata.set(Commands.ILI9341_RAMWR.U)
+      wrdata.attr := SpiAttr.Data
+      when (r_cmd_ctr >= 3.U) {
+        wrdata.data := (width - 1).U >> (r_cmd_ctr(0) << 3.U)
       }.otherwise {
-        wrdata.attr := SpiAttr.Data
-        wrdata.data := color_table(r_color_counter.value) >> (r_cmd_ctr(0) << 3.U)
+        wrdata.data := 0.U
       }
+    }
+  }.elsewhen (r_fill_stm === FillState.sPASET) {
+    when (r_cmd_ctr === 0.U) {
+      wrdata.set(Commands.ILI9341_PASET.U)
+    }.otherwise {
+      wrdata.attr := SpiAttr.Data
+      wrdata.data := w_x_start >> (r_cmd_ctr(0) << 3.U)
+    }
+  }.otherwise {
+    when (r_cmd_ctr === 0.U) {
+      wrdata.set(Commands.ILI9341_RAMWR.U)
+    }.otherwise {
+      wrdata.attr := SpiAttr.Data
+      wrdata.data := color_table(r_color_counter.value) >> (r_cmd_ctr(0) << 3.U)
     }
   }
 
-  io.sio.valid := (r_stm === State.sInit) || (r_stm === State.sFill)
+  io.sio.valid := w_running
   io.sio.bits := wrdata
-  io.fill_done := !(r_stm === State.sInit)
+  io.fill_done := w_finish_fill
 }
 
 object genRTL extends App {
