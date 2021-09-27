@@ -120,8 +120,12 @@ class FillSequencer(p: SimpleIOParams)
       r_fill_stm := FillState.sRAMWR
     }
   }.elsewhen (r_fill_stm === FillState.sRAMWR) {
-    when (w_last_horizontal && io.sio.fire() && !r_cmd_ctr(0)) {
-      r_fill_stm := FillState.sPASET
+    when (io.sio.fire() && !r_cmd_ctr(0)) {
+      when (w_last_horizontal && w_last_vertical) {
+        r_fill_stm := FillState.sCASET
+      }.elsewhen (w_last_horizontal) {
+        r_fill_stm := FillState.sPASET
+      }
     }
   }
 
