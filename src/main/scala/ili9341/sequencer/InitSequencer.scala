@@ -52,8 +52,13 @@ object Init {
 class InitSequencer(p: SimpleIOParams)
   (implicit val debug: Boolean = false) extends Module {
 
-  import State._
   import ili9341.spi.RegInfo._
+
+  object InitState extends ChiselEnum {
+    val sRun = Value
+    val sDone = Value
+  }
+
 
   val io = IO(new Bundle {
     val sio = Decoupled(new SpiData)
@@ -61,17 +66,25 @@ class InitSequencer(p: SimpleIOParams)
   })
 
   // ステートマシン
-  val r_stm = RegInit(State.sInit)
+  val r_stm = RegInit(InitState.sRun)
   val r_counter = Counter(Init.initCmdSequence.length)
   val w_init_cmds = VecInit(Init.initCmdSequence.map(_.U))
+  val w_last_data = r_counter.value === (Init.initCmdSequence.length - 1).U
 
-  when (r_stm === State.sInit && io.sio.ready) {
+  when (r_stm === InitState.sRun) {
+    when (w_last_data && io.sio.fire) {
+      r_stm := InitState.sDone
+    }
+  }
+
+  when (r_stm === InitState.sRun && io.sio.ready) {
     r_counter.inc
   }
 
   val r_init_done = RegInit(false.B)
 
-  when (r_counter.value === (Init.initCmdSequence.length - 1).U && io.sio.fire()) {
+
+  when (w_last_data && io.sio.fire) {
     r_init_done := true.B
   }
 
@@ -79,7 +92,7 @@ class InitSequencer(p: SimpleIOParams)
   val wrdata = Wire(new SpiData)
 
   wrdata.set(w_init_cmds(r_counter.value))
-  io.sio.valid := (r_stm === State.sInit)
+  io.sio.valid := (r_stm === InitState.sRun)
   io.sio.bits := wrdata
   io.init_done := r_init_done
 }

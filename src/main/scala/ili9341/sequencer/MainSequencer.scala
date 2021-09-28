@@ -53,10 +53,13 @@ class MainSequencer(p: SimpleIOParams)
   m_fill_seq.io.fill_button := io.fill_button
   m_init_seq.io.sio.ready := false.B
   m_fill_seq.io.sio.ready := false.B
+  io.sio.valid := false.B
+  io.sio.bits.attr := SpiAttr.Data
+  io.sio.bits.data := 0.U
 
   when (r_stm === State.sInit) {
     io.sio <> m_init_seq.io.sio
-  }.otherwise {
+  }.elsewhen (r_stm === State.sFill) {
     io.sio <> m_fill_seq.io.sio
   }
 
