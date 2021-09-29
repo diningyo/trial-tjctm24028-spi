@@ -37,7 +37,7 @@ class ILI9341ControllerTest extends FlatSpec with ChiselScalatestTester with Mat
   behavior of "ILI9341Controller"
 
   it should f"be passed init test" in {
-    test(new ILI9341ControllerTestTb(p, 50000000)).withAnnotations(annos) { c =>
+    test(new ILI9341ControllerTestTb(p, 10000000)).withAnnotations(annos) { c =>
       c.clock.setTimeout(10000000)
 
       println(s"${c.io.init_done.peek.litToBoolean}")
