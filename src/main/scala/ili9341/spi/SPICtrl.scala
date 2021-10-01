@@ -85,7 +85,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   // 受信方向は受信した信号と半周期ずれたところで
   // データを確定させるため初期値をずらす
   val initDurationCount = direction match {
-    case SPITx => durationCount / 4
+    case SPITx => 0
     case SPIRx => durationCount / 2
   }
 
@@ -206,7 +206,7 @@ class CtrlStateMachine extends Module {
   switch (r_stm) {
     is (CtrlState.sIdle) {
       when (io.start_req) {
-        r_stm := CtrlState.sStart
+        r_stm := CtrlState.sData
       }
     }
 
