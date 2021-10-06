@@ -142,11 +142,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
     case SPITx =>
       val reg = io.reg.asInstanceOf[DecoupledIO[SpiData]]
 
-      io.spi := MuxCase(1.U, Seq(
-        m_stm.io.state.start -> 0.U,
-        m_stm.io.state.data -> reg.bits.data(7.U - r_bit_idx)
-      ))
-
+      io.spi := reg.bits.data(7.U - r_bit_idx)
       reg.ready := m_stm.io.state.stop && w_update_req
 
     case SPIRx =>
@@ -167,7 +163,6 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
 
   // m_stm <-> ctrlの接続
   m_stm.io.start_req := w_start_req
-  m_stm.io.data_req := m_stm.io.state.start && w_update_req
   m_stm.io.stop_req := m_stm.io.state.data && w_update_req && (r_bit_idx === 7.U)
   m_stm.io.fin := w_fin
 }
@@ -179,14 +174,12 @@ class CtrlStateMachine extends Module {
 
   val io = IO(new Bundle {
     val start_req = Input(Bool())
-    val data_req = Input(Bool())
     val stop_req = Input(Bool())
     val fin = Input(Bool())
 
     // ステートの出力
     val state = Output(new Bundle {
       val idle = Output(Bool())
-      val start = Output(Bool())
       val data = Output(Bool())
       val stop = Output(Bool())
     })
@@ -195,7 +188,6 @@ class CtrlStateMachine extends Module {
   // ステート用のEnum
   object CtrlState extends ChiselEnum {
     val sIdle = Value
-    val sStart = Value
     val sData = Value
     val sStop = Value
   }
@@ -206,12 +198,6 @@ class CtrlStateMachine extends Module {
   switch (r_stm) {
     is (CtrlState.sIdle) {
       when (io.start_req) {
-        r_stm := CtrlState.sData
-      }
-    }
-
-    is (CtrlState.sStart) {
-      when (io.data_req) {
         r_stm := CtrlState.sData
       }
     }
@@ -231,7 +217,6 @@ class CtrlStateMachine extends Module {
 
   // output
   io.state.idle := r_stm === CtrlState.sIdle
-  io.state.start := r_stm === CtrlState.sStart
   io.state.data := r_stm === CtrlState.sData
   io.state.stop := r_stm === CtrlState.sStop
 }
