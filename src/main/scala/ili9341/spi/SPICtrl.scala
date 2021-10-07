@@ -89,7 +89,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
     case SPIRx => durationCount / 2
   }
 
-  io.csx := !(m_stm.io.state.data || m_stm.io.state.stop)
+  io.csx := !(m_stm.io.state.data)
 
   val r_sck = RegInit(false.B)
 
@@ -111,7 +111,6 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   val w_update_req = Mux(m_stm.io.state.data,
     r_duration_ctr === (durationCount - 1).U,
     r_duration_ctr === ((durationCount / 2) - 1).U)
-  val w_fin = m_stm.io.state.stop && w_update_req
 
   // アイドル時の制御
   when (m_stm.io.state.idle) {
@@ -143,7 +142,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
       val reg = io.reg.asInstanceOf[DecoupledIO[SpiData]]
 
       io.spi := reg.bits.data(7.U - r_bit_idx)
-      reg.ready := m_stm.io.state.stop && w_update_req
+      reg.ready := m_stm.io.state.stop
 
     case SPIRx =>
       val reg = io.reg.asInstanceOf[DecoupledIO[SpiData]]
@@ -156,7 +155,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
           r_rx_data := r_rx_data | (io.spi << r_bit_idx)
         }
       }
-      reg.ready := w_fin
+      reg.ready := m_stm.io.state.stop
       reg.bits.attr := SpiAttr.Data
       reg.bits.data := r_rx_data
   }
@@ -164,7 +163,7 @@ class Ctrl(direction: SPIDirection, durationCount: Int) extends Module {
   // m_stm <-> ctrlの接続
   m_stm.io.start_req := w_start_req
   m_stm.io.stop_req := m_stm.io.state.data && w_update_req && (r_bit_idx === 7.U)
-  m_stm.io.fin := w_fin
+  m_stm.io.fin := m_stm.io.state.stop
 }
 
 /**
