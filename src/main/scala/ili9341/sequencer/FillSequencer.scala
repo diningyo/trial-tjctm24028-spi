@@ -168,15 +168,3 @@ class FillSequencer(p: SimpleIOParams)
   io.sio.bits := wrdata
   io.fill_done := w_finish_fill
 }
-
-object genRTL extends App {
-  val name = "InitSequencer"
-  val p = SimpleIOParams()
-  val rtl = (new ChiselStage).emitVerilog(
-      new InitSequencer(p),
-      Array(
-        "-td=rtl", s"-o=$name"
-      ))
-
-  println(rtl)
-}
