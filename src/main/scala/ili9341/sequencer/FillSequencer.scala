@@ -111,24 +111,6 @@ class FillSequencer(p: SimpleIOParams)
     }
   }
 
-  when (r_fill_stm === FillState.sCASET) {
-    when (w_done_cmd && io.sio.fire()) {
-      r_fill_stm := FillState.sPASET
-    }
-  }.elsewhen (r_fill_stm === FillState.sPASET) {
-    when (w_done_cmd && io.sio.fire()) {
-      r_fill_stm := FillState.sRAMWR
-    }
-  }.elsewhen (r_fill_stm === FillState.sRAMWR) {
-    when (io.sio.fire() && !r_cmd_ctr(0)) {
-      when (w_last_horizontal && w_last_vertical) {
-        r_fill_stm := FillState.sCASET
-      }.elsewhen (w_last_horizontal) {
-        r_fill_stm := FillState.sPASET
-      }
-    }
-  }
-
   val w_x_start = r_height_ctr.value
   val w_x_end = w_x_start + 1.U
   val w_y_start = r_width_ctr.value
@@ -167,4 +149,47 @@ class FillSequencer(p: SimpleIOParams)
   io.sio.valid := w_running
   io.sio.bits := wrdata
   io.fill_done := w_finish_fill
+}
+
+class FillStateMachine extends Module {
+  val io = IO(new Bundle {
+    val done_caset = Input(Bool())
+    val done_paset = Input(Bool())
+    val done_ramwr = Input(Bool())
+    val is_last_horizontal = Input(Bool())
+    val is_last_vertical = Input(Bool())
+    val state = Output(new Bundle {
+      val caset = Bool()
+      val paset = Bool()
+      val ramwr = Bool()
+    })
+  })
+
+  val r_fill_stm = RegInit(FillState.sCASET)
+
+  val w_is_caset = r_fill_stm === FillState.sCASET
+  val w_is_paset = r_fill_stm === FillState.sPASET
+  val w_is_ramwr = r_fill_stm === FillState.sRAMWR
+
+  when (w_is_caset) {
+    when (io.done_caset) {
+      r_fill_stm := FillState.sPASET
+    }
+  }.elsewhen (w_is_paset) {
+    when (io.done_paset) {
+      r_fill_stm := FillState.sRAMWR
+    }
+  }.elsewhen (w_is_ramwr) {
+    when (io.done_ramwr) {
+      when (io.is_last_horizontal && io.is_last_vertical) {
+        r_fill_stm := FillState.sCASET
+      }.elsewhen (io.is_last_horizontal) {
+        r_fill_stm := FillState.sPASET
+      }
+    }
+  }
+
+  io.state.caset := w_is_caset
+  io.state.paset := w_is_paset
+  io.state.ramwr := w_is_ramwr
 }
