@@ -67,6 +67,8 @@ class FillSequencer(p: SimpleIOParams)
 
   io.sio := DontCare
 
+  val m_stm = Module(new FillStateMachine)
+
   // ステートマシン
   val w_finish_fill = WireDefault(false.B)
   val color_table = WireDefault(VecInit(Color.table.map(_.U)))
@@ -85,17 +87,23 @@ class FillSequencer(p: SimpleIOParams)
   val r_fill_stm = RegInit(FillState.sCASET)
   val w_running = r_fill_stm =/= FillState.sIDLE
 
+  m_stm.io.done_caset := w_done_cmd && io.sio.fire()
+  m_stm.io.done_paset := w_done_cmd && io.sio.fire()
+  m_stm.io.done_ramwr := !r_cmd_ctr(0) && io.sio.fire()
+  m_stm.io.is_last_vertical := w_last_vertical
+  m_stm.io.is_last_horizontal := w_last_horizontal
+
   when (w_running && w_finish_fill) {
     r_color_counter.inc
   }
 
-  when (w_running && r_fill_stm === FillState.sRAMWR && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
+  when (w_running && m_stm.io.state.ramwr && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
     when (!r_cmd_ctr(0)) {
       r_width_ctr.inc
     }
   }
 
-  when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal && io.sio.fire() && !r_cmd_ctr(0))) {
+  when ((m_stm.io.state.ramwr && w_last_horizontal && io.sio.fire() && !r_cmd_ctr(0))) {
     r_height_ctr.inc
   }
 
@@ -103,8 +111,8 @@ class FillSequencer(p: SimpleIOParams)
 
 
   when (io.sio.fire()) {
-    when ((r_fill_stm === FillState.sRAMWR && w_last_horizontal && !r_cmd_ctr(0)) ||
-      (r_fill_stm =/= FillState.sRAMWR && w_done_cmd)) {
+    when ((m_stm.io.state.ramwr && w_last_horizontal && !r_cmd_ctr(0)) ||
+      (!m_stm.io.state.ramwr && w_done_cmd)) {
       r_cmd_ctr := 0.U
     }.otherwise {
       r_cmd_ctr := r_cmd_ctr + 1.U
@@ -119,7 +127,7 @@ class FillSequencer(p: SimpleIOParams)
   // IOの接続
   val wrdata = Wire(new SpiData)
 
-  when (r_fill_stm === FillState.sCASET) {
+  when (m_stm.io.state.caset) {
     when (r_cmd_ctr === 0.U) {
       wrdata.set(Commands.ILI9341_CASET.U)
     }.otherwise {
@@ -130,7 +138,7 @@ class FillSequencer(p: SimpleIOParams)
         wrdata.data := 0.U
       }
     }
-  }.elsewhen (r_fill_stm === FillState.sPASET) {
+  }.elsewhen (m_stm.io.state.paset) {
     when (r_cmd_ctr === 0.U) {
       wrdata.set(Commands.ILI9341_PASET.U)
     }.otherwise {
