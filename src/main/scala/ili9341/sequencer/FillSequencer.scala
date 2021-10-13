@@ -65,8 +65,6 @@ class FillSequencer(p: SimpleIOParams)
     val fill_done = Output(Bool())
   })
 
-  io.sio := DontCare
-
   val m_stm = Module(new FillStateMachine)
 
   // ステートマシン
