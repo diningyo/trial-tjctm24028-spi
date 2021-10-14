@@ -20,7 +20,6 @@ class MainSequencer(p: SimpleIOParams)
   (implicit val debug: Boolean = false) extends Module {
 
   import State._
-  import ili9341.spi.RegInfo._
 
   val io = IO(new Bundle {
     val sio = Decoupled(new SpiData)

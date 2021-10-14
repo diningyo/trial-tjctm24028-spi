@@ -52,13 +52,10 @@ object Init {
 class InitSequencer(p: SimpleIOParams)
   (implicit val debug: Boolean = false) extends Module {
 
-  import ili9341.spi.RegInfo._
-
   object InitState extends ChiselEnum {
     val sRun = Value
     val sDone = Value
   }
-
 
   val io = IO(new Bundle {
     val sio = Decoupled(new SpiData)

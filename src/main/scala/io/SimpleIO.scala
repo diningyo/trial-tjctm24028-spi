@@ -39,20 +39,3 @@ object SpiData {
     ret
   }
 }
-
-
-/**
-  * SimpleIO
-  * @param p IOパラメータ
-  */
-class SimpleIO(p: SimpleIOParams) extends Bundle {
-  val addr = Output(UInt(p.addrBits.W))
-  val wren = Output(Bool())
-  val rden = Output(Bool())
-  val wrdata = Output(new SpiData)
-  val rddv = Input(Bool())
-  val rddata = Input(UInt(p.dataBits.W))
-
-  override def cloneType: this.type =
-    new SimpleIO(p).asInstanceOf[this.type]
-}
