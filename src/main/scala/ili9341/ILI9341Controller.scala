@@ -16,7 +16,7 @@ import sequencer._
   * @param baudrate ボーレート
   * @param clockFreq クロック周波数(MHz)
   */
-class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 1000000, clockFreq: Int = 100) extends Module {
+class ILI9341Controller(baudrate: Int = 1000000, clockFreq: Int = 100) extends Module {
   val io = IO(new Bundle {
     val spi = new SPIIO
     val fill_button = Input(Bool())
@@ -24,7 +24,7 @@ class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 1000000, clockFreq: I
   })
 
   //val r_fill_bottun = RegInit(VecInit(Seq.fill(3)(true.B)))
-  val m_seq = Module(new MainSequencer(p))
+  val m_seq = Module(new MainSequencer())
   val m_spi = Module(new SPIController(baudrate, clockFreq))
 
   m_spi.io.mbus <> m_seq.io.sio
@@ -35,9 +35,8 @@ class ILI9341Controller(p: SimpleIOParams, baudrate: Int = 1000000, clockFreq: I
 
 object genRTL extends App {
   val name = "ILI9341Controller"
-  val p = SimpleIOParams()
   val rtl = (new ChiselStage).emitVerilog(
-      new ILI9341Controller(p, 1000000),
+      new ILI9341Controller(1000000),
       Array(
         "-td=rtl", s"-o=$name"
       ))

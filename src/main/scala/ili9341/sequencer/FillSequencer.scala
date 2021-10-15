@@ -53,7 +53,7 @@ object Color {
   * @param p SimpleIOParamsのインスタンス
   * @param debug trueでデバッグポートが追加される
   */
-class FillSequencer(p: SimpleIOParams)
+class FillSequencer()
   (implicit val debug: Boolean = false) extends Module {
 
   import State._

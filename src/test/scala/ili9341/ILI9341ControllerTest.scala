@@ -14,7 +14,7 @@ import io._
 import spi._
 import sequencer._
 
-class ILI9341ControllerTestTb(p: SimpleIOParams, baudrate: Int = 500000, clockFreq: Int = 100) extends Module {
+class ILI9341ControllerTestTb(baudrate: Int = 500000, clockFreq: Int = 100) extends Module {
 
   val io = IO(new Bundle {
     val spi = new SPIIO
@@ -24,7 +24,7 @@ class ILI9341ControllerTestTb(p: SimpleIOParams, baudrate: Int = 500000, clockFr
 
   io := DontCare
 
-  val dut_ctrl = Module(new ILI9341Controller(p, baudrate))
+  val dut_ctrl = Module(new ILI9341Controller(bbaudrate))
 
   io <> dut_ctrl.io
 }
@@ -32,12 +32,11 @@ class ILI9341ControllerTestTb(p: SimpleIOParams, baudrate: Int = 500000, clockFr
 class ILI9341ControllerTest extends FlatSpec with ChiselScalatestTester with Matchers with ParallelTestExecution {
 
   val annos = Seq(VerilatorBackendAnnotation)
-  val p = new SimpleIOParams
 
   behavior of "ILI9341Controller"
 
   it should f"be passed init test" in {
-    test(new ILI9341ControllerTestTb(p, 10000000)).withAnnotations(annos) { c =>
+    test(new ILI9341ControllerTestTb(10000000)).withAnnotations(annos) { c =>
       c.clock.setTimeout(10000000)
 
       println(s"${c.io.init_done.peek.litToBoolean}")

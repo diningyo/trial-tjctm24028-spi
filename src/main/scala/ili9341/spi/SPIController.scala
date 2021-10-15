@@ -20,17 +20,17 @@ class SPIIO extends Bundle {
   val debug_clk = Output(Bool())
 }
 
-class SPIControllerIO(p: SimpleIOParams)
-               (implicit debug: Boolean = false)extends Bundle {
+class SPIControllerIO()
+  (implicit debug: Boolean = false)extends Bundle {
   val mbus = Flipped(Decoupled(new SpiData))
   val spi= new SPIIO
 
   override def cloneType: this.type =
-    new SPIControllerIO(p).asInstanceOf[this.type]
+    new SPIControllerIO().asInstanceOf[this.type]
 }
 
 /**
-  * Uartのトップモジュール
+  * SPIシーケンサーののトップモジュール
   * @param baudrate ボーレート
   * @param clockFreq クロックの周波数(MHz)
   */
@@ -38,7 +38,7 @@ class SPIController(baudrate: Int, clockFreq: Int) extends Module {
 
   val p = SimpleIOParams()
 
-  val io = IO(new SPIControllerIO(p))
+  val io = IO(new SPIControllerIO())
 
   val m_tx_fifo = Queue(io.mbus)
   val m_ctrl = Module(new TxRxCtrl(baudrate, clockFreq))

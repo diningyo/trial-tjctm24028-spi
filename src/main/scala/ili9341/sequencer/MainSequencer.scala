@@ -16,7 +16,7 @@ object State extends ChiselEnum {
   val sFinish = Value
 }
 
-class MainSequencer(p: SimpleIOParams)
+class MainSequencer()
   (implicit val debug: Boolean = false) extends Module {
 
   import State._
@@ -27,8 +27,8 @@ class MainSequencer(p: SimpleIOParams)
     val init_done = Output(Bool())
   })
 
-  val m_init_seq = Module(new InitSequencer(p))
-  val m_fill_seq = Module(new FillSequencer(p))
+  val m_init_seq = Module(new InitSequencer())
+  val m_fill_seq = Module(new FillSequencer())
 
   // ステートマシン
   val r_stm = RegInit(State.sInit)
