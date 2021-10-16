@@ -5,3 +5,7 @@
 .metals
 target
 test_run_dir
+
+*.jou
+vivado_*.str
+.Xil/
