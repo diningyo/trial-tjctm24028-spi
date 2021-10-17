@@ -50,8 +50,6 @@ object Color {
 
 /**
   * 画面を塗りつぶすシーケンサー
-  * @param p SimpleIOParamsのインスタンス
-  * @param debug trueでデバッグポートが追加される
   */
 class FillSequencer()
   (implicit val debug: Boolean = false) extends Module {

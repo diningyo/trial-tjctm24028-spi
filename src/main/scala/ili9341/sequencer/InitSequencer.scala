@@ -46,11 +46,8 @@ object Init {
 
 /**
   * 初期化用のシーケンサー
-  * @param p SimpleIOParamsのインスタンス
-  * @param debug trueでデバッグポートが追加される
   */
-class InitSequencer()
-  (implicit val debug: Boolean = false) extends Module {
+class InitSequencer() extends Module {
 
   object InitState extends ChiselEnum {
     val sRun = Value

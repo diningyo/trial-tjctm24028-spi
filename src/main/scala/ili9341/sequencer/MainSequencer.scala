@@ -9,17 +9,14 @@ import chisel3.experimental.ChiselEnum
 
 import io._
 
-object State extends ChiselEnum {
-  val sInit = Value
-  val sIdle = Value
-  val sFill = Value
-  val sFinish = Value
-}
+class MainSequencer() extends Module {
 
-class MainSequencer()
-  (implicit val debug: Boolean = false) extends Module {
-
-  import State._
+  object State extends ChiselEnum {
+    val sInit = Value
+    val sIdle = Value
+    val sFill = Value
+    val sFinish = Value
+  }
 
   val io = IO(new Bundle {
     val sio = Decoupled(new SpiData)
