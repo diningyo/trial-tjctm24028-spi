@@ -36,8 +36,6 @@ class SPIControllerIO()
   */
 class SPIController(baudrate: Int, clockFreq: Int) extends Module {
 
-  val p = SimpleIOParams()
-
   val io = IO(new SPIControllerIO())
 
   val m_tx_fifo = Queue(io.mbus)

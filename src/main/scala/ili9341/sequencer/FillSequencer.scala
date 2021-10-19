@@ -8,12 +8,7 @@ import chisel3.util._
 import chisel3.experimental.ChiselEnum
 
 import io._
-import treadle.Command
-import java.sql.Statement
 
-/**
-  * Sequencerのステート
-  */
 object FillState extends ChiselEnum {
   val sIDLE = Value
   val sCASET = Value
@@ -47,14 +42,11 @@ object Color {
                   MAGENTA, YELLOW, WHITE, ORANGE, GREENYELLOW, PINK)
 }
 
-
 /**
   * 画面を塗りつぶすシーケンサー
   */
 class FillSequencer()
   (implicit val debug: Boolean = false) extends Module {
-
-  import State._
 
   val io = IO(new Bundle {
     val sio = Decoupled(new SpiData)
