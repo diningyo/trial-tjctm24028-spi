@@ -6,17 +6,6 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.ChiselEnum
 
-/**
-  * SimpleIOクラスのパラメータ用クラス
-  * @param addrBits アドレスのビット幅
-  * @param dataBits データのビット幅
-  */
-case class SimpleIOParams
-  (
-   addrBits: Int = 4,
-   dataBits: Int = 8
-  )
-
 object SpiAttr extends ChiselEnum {
   val Data, Cmd = Value
 }
