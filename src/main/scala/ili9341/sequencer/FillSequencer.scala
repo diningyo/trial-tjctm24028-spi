@@ -74,6 +74,7 @@ class FillSequencer()
   val r_fill_stm = RegInit(FillState.sCASET)
   val w_running = r_fill_stm =/= FillState.sIDLE
 
+  m_stm.io.start := io.fill_button
   m_stm.io.done_caset := w_done_cmd && io.sio.fire()
   m_stm.io.done_paset := w_done_cmd && io.sio.fire()
   m_stm.io.done_ramwr := !r_cmd_ctr(0) && io.sio.fire()
@@ -148,6 +149,7 @@ class FillSequencer()
 
 class FillStateMachine extends Module {
   val io = IO(new Bundle {
+    val start      = Input(Bool())
     val done_caset = Input(Bool())
     val done_paset = Input(Bool())
     val done_ramwr = Input(Bool())
@@ -160,13 +162,18 @@ class FillStateMachine extends Module {
     })
   })
 
-  val r_fill_stm = RegInit(FillState.sCASET)
+  val r_fill_stm = RegInit(FillState.sIDLE)
 
+  val w_is_idle  = r_fill_stm === FillState.sIDLE
   val w_is_caset = r_fill_stm === FillState.sCASET
   val w_is_paset = r_fill_stm === FillState.sPASET
   val w_is_ramwr = r_fill_stm === FillState.sRAMWR
 
-  when (w_is_caset) {
+  when (w_is_idle) {
+    when (io.start) {
+      r_fill_stm := FillState.sCASET
+    }
+  }.elsewhen (w_is_caset) {
     when (io.done_caset) {
       r_fill_stm := FillState.sPASET
     }
@@ -177,7 +184,7 @@ class FillStateMachine extends Module {
   }.elsewhen (w_is_ramwr) {
     when (io.done_ramwr) {
       when (io.is_last_horizontal && io.is_last_vertical) {
-        r_fill_stm := FillState.sCASET
+        r_fill_stm := FillState.sIDLE
       }.elsewhen (io.is_last_horizontal) {
         r_fill_stm := FillState.sPASET
       }

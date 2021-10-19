@@ -23,12 +23,21 @@ class ILI9341Controller(baudrate: Int = 1000000, clockFreq: Int = 100) extends M
     val init_done = Output(Bool())
   })
 
-  //val r_fill_bottun = RegInit(VecInit(Seq.fill(3)(true.B)))
+  val countMax = clockFreq * Math.pow(10, 6).toInt
+  val button_ctr = Counter(countMax)
+  val button_sync = button_ctr.value === (countMax - 1).U
+  val r_fill_bottun = RegInit(false.B)
+
+  when (button_sync) {
+    r_fill_bottun := io.fill_button
+  }
+
   val m_seq = Module(new MainSequencer())
   val m_spi = Module(new SPIController(baudrate, clockFreq))
 
+
   m_spi.io.mbus <> m_seq.io.sio
-  m_seq.io.fill_button := io.fill_button
+  m_seq.io.fill_button := r_fill_bottun
   io.init_done := m_seq.io.init_done
   io.spi <> m_spi.io.spi
 }
