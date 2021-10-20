@@ -24,7 +24,7 @@ class ILI9341ControllerTestTb(baudrate: Int = 500000, clockFreq: Int = 100) exte
 
   io := DontCare
 
-  val dut_ctrl = Module(new ILI9341Controller(bbaudrate))
+  val dut_ctrl = Module(new ILI9341Controller(baudrate))
 
   io <> dut_ctrl.io
 }
@@ -47,9 +47,7 @@ class ILI9341ControllerTest extends FlatSpec with ChiselScalatestTester with Mat
 
       println(s"${c.io.init_done.peek.litToBoolean}")
       println(s"init_done = ${c.io.init_done.peek().litValue()}")
-
-      println("init done!!")
-      c.clock.step(1000)
+      c.clock.step(100)
 
       c.io.fill_button.poke(true.B)
       c.clock.step(5000000)
