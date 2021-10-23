@@ -39,13 +39,10 @@ class ILI9341ControllerTest extends FlatSpec with ChiselScalatestTester with Mat
     test(new ILI9341ControllerTestTb(10000000)).withAnnotations(annos) { c =>
       c.clock.setTimeout(10000000)
 
-      println(s"${c.io.init_done.peek.litToBoolean}")
-      println(s"init_done = ${c.io.init_done.peek().litValue()}")
       while (!c.io.init_done.peek.litToBoolean) {
         c.clock.step(1)
       }
 
-      println(s"${c.io.init_done.peek.litToBoolean}")
       println(s"init_done = ${c.io.init_done.peek().litValue()}")
       c.clock.step(100)
 
