@@ -1,3 +1,5 @@
+JD lcd
+
 |PIN No. | FPGA PIN | LCD PIN|
 |--------|----------|--------|
 | 1      | D4       | SDO    |
