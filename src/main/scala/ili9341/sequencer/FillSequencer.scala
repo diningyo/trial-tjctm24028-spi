@@ -16,32 +16,6 @@ object FillState extends ChiselEnum {
   val sRAMWR = Value
 }
 
-object Color {
-  val BLACK       = 0x0000 ///<   0,   0,   0
-  val NAVY        = 0x000F ///<   0,   0, 123
-  val DARKGREEN   = 0x03E0 ///<   0, 125,   0
-  val DARKCYAN    = 0x03EF ///<   0, 125, 123
-  val MAROON      = 0x7800 ///< 123,   0,   0
-  val PURPLE      = 0x780F ///< 123,   0, 123
-  val OLIVE       = 0x7BE0 ///< 123, 125,   0
-  val LIGHTGREY   = 0xC618 ///< 198, 195, 198
-  val DARKGREY    = 0x7BEF ///< 123, 125, 123
-  val BLUE        = 0x001F ///<   0,   0, 255
-  val GREEN       = 0x07E0 ///<   0, 255,   0
-  val CYAN        = 0x07FF ///<   0, 255, 255
-  val RED         = 0xF800 ///< 255,   0,   0
-  val MAGENTA     = 0xF81F ///< 255,   0, 255
-  val YELLOW      = 0xFFE0 ///< 255, 255,   0
-  val WHITE       = 0xFFFF ///< 255, 255, 255
-  val ORANGE      = 0xFD20 ///< 255, 165,   0
-  val GREENYELLOW = 0xAFE5 ///< 173, 255,  41
-  val PINK        = 0xFC18 ///< 255, 130, 198
-
-  val table = Seq(BLACK, NAVY, DARKGREEN, DARKCYAN, MAROON, PURPLE,
-                  OLIVE, LIGHTGREY, DARKGREY, BLUE, GREEN, CYAN, RED,
-                  MAGENTA, YELLOW, WHITE, ORANGE, GREENYELLOW, PINK)
-}
-
 /**
   * 画面を塗りつぶすシーケンサー
   */
@@ -50,6 +24,7 @@ class FillSequencer()
 
   val io = IO(new Bundle {
     val sio = Decoupled(new SpiData)
+    val color = Input(UInt(16.W))
     val fill_button = Input(Bool())
     val fill_done = Output(Bool())
   })
@@ -58,8 +33,6 @@ class FillSequencer()
 
   // ステートマシン
   val w_finish_fill = WireDefault(false.B)
-  val color_table = WireDefault(VecInit(Color.table.map(_.U)))
-  val r_color_counter = Counter(Color.table.length)
   val width = 240
   val height = 320
 
@@ -80,10 +53,6 @@ class FillSequencer()
   m_stm.io.done_ramwr := !r_cmd_ctr(0) && io.sio.fire()
   m_stm.io.is_last_vertical := w_last_vertical
   m_stm.io.is_last_horizontal := w_last_horizontal
-
-  when (w_running && w_finish_fill) {
-    r_color_counter.inc
-  }
 
   when (w_running && m_stm.io.state.ramwr && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
     when (!r_cmd_ctr(0)) {
@@ -138,7 +107,7 @@ class FillSequencer()
       wrdata.set(Commands.ILI9341_RAMWR.U)
     }.otherwise {
       wrdata.attr := SpiAttr.Data
-      wrdata.data := color_table(r_color_counter.value) >> (r_cmd_ctr(0) << 3.U)
+      wrdata.data := io.color >> (r_cmd_ctr(0) << 3.U)
     }
   }
 
