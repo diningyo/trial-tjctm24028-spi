@@ -12,7 +12,6 @@ import sequencer._
 
 /**
   * ILI9341Controller
-  * @param p SimpleIOのパラメータ
   * @param baudrate ボーレート
   * @param clockFreq クロック周波数(MHz)
   */
