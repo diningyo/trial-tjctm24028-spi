@@ -19,8 +19,7 @@ object FillState extends ChiselEnum {
 /**
   * 画面を塗りつぶすシーケンサー
   */
-class FillSequencer()
-  (implicit val debug: Boolean = false) extends Module {
+class FillSequencer() extends Module {
 
   val io = IO(new Bundle {
     val sio = Decoupled(new SpiData)
@@ -42,14 +41,14 @@ class FillSequencer()
   val r_height_ctr = Counter(height)
   val w_last_horizontal = r_width_ctr.value === (width - 1).U
   val w_last_vertical = r_height_ctr.value === (height - 1).U
-  val w_done_cmd = r_cmd_ctr === 4.U
+  val w_last_cmd = r_cmd_ctr === 4.U
   val w_done_ramwr = r_cmd_ctr === 2.U
   val r_fill_stm = RegInit(FillState.sCASET)
   val w_running = r_fill_stm =/= FillState.sIDLE
 
   m_stm.io.start := io.fill_button
-  m_stm.io.done_caset := w_done_cmd && io.sio.fire()
-  m_stm.io.done_paset := w_done_cmd && io.sio.fire()
+  m_stm.io.done_caset := w_last_cmd && io.sio.fire()
+  m_stm.io.done_paset := w_last_cmd && io.sio.fire()
   m_stm.io.done_ramwr := !r_cmd_ctr(0) && io.sio.fire()
   m_stm.io.is_last_vertical := w_last_vertical
   m_stm.io.is_last_horizontal := w_last_horizontal
@@ -69,7 +68,7 @@ class FillSequencer()
 
   when (io.sio.fire()) {
     when ((m_stm.io.state.ramwr && w_last_horizontal && !r_cmd_ctr(0)) ||
-      (!m_stm.io.state.ramwr && w_done_cmd)) {
+      (!m_stm.io.state.ramwr && w_last_cmd)) {
       r_cmd_ctr := 0.U
     }.otherwise {
       r_cmd_ctr := r_cmd_ctr + 1.U
