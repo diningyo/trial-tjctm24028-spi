@@ -34,15 +34,13 @@ class TxRxCtrl(baudrate: Int=9600,
   println(s"durationCount = ${durationCount}")
 
   val m_tx_ctrl = Module(new Ctrl(SPITx, durationCount))
-  //val m_rx_ctrl = Module(new Ctrl(SPIRx, durationCount))
 
   io.spi.debug_clk := false.B
 
   val dcx = RegInit(true.B)
 
-  //io.spi.sck := Mux(!(m_tx_ctrl.io.csx && m_rx_ctrl.io.csx),  r_sck, false.B)
   io.spi.sck := m_tx_ctrl.io.sck
-  io.spi.dcx := !io.tx_data.bits.attr.asUInt()//true.B  // tmp. send command only
+  io.spi.dcx := !io.tx_data.bits.attr.asUInt()
   io.spi.led := true.B
 
   val r_reset = RegInit(false.B)
@@ -51,12 +49,8 @@ class TxRxCtrl(baudrate: Int=9600,
   io.spi.reset := true.B //r_reset
 
   io.spi.sdi := m_tx_ctrl.io.spi
-  //io.spi.csx := m_tx_ctrl.io.csx && m_rx_ctrl.io.csx
   io.spi.csx := m_tx_ctrl.io.csx
   m_tx_ctrl.io.reg <> io.tx_data
-
-  //m_rx_ctrl.io.spi := io.spi.sdo
-  //m_rx_ctrl.io.reg <> io.r2c.rx
 }
 
 /**
