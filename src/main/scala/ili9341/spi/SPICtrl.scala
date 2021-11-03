@@ -19,17 +19,17 @@ case object SPIRx extends SPIDirection
 
 /**
   * SPIの制御モジュール
-  * @param baudrate ボーレート
+  * @param spiFreq SPIの周波数(MHz)
   * @param clockFreq クロックの周波数(MHz)
   */
-class TxRxCtrl(baudrate: Int=9600,
+class TxRxCtrl(spiFreq: Int=9600,
                clockFreq: Int=100) extends Module {
   val io = IO(new Bundle {
     val spi = new SPIIO
     val tx_data = Flipped(Decoupled(new SpiData))
   })
 
-  val durationCount = round(clockFreq * pow(10, 6) / baudrate).toInt
+  val durationCount = round(clockFreq / spiFreq * pow(10, 6)).toInt
 
   println(s"durationCount = ${durationCount}")
 

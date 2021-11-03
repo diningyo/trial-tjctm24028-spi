@@ -31,15 +31,15 @@ class SPIControllerIO()
 
 /**
   * SPIシーケンサーののトップモジュール
-  * @param baudrate ボーレート
+  * @param spiFreq ボーレート
   * @param clockFreq クロックの周波数(MHz)
   */
-class SPIController(baudrate: Int, clockFreq: Int) extends Module {
+class SPIController(spiFreq: Int, clockFreq: Int) extends Module {
 
   val io = IO(new SPIControllerIO())
 
   val m_tx_fifo = Queue(io.mbus)
-  val m_ctrl = Module(new TxRxCtrl(baudrate, clockFreq))
+  val m_ctrl = Module(new TxRxCtrl(spiFreq, clockFreq))
 
   m_tx_fifo <> m_ctrl.io.tx_data
   io.spi <> m_ctrl.io.spi
