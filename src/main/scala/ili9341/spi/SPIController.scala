@@ -7,8 +7,6 @@ import chisel3.util._
 
 import scala.math.{pow, round}
 
-import io._
-
 class SPIIO extends Bundle {
   val sck = Output(Bool())
   val led = Output(Bool())

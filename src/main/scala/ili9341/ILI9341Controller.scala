@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.stage._
 import chisel3.util._
 
-import io._
 import spi._
 import sequencer._
 

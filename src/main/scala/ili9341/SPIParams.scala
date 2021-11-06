@@ -1,6 +1,6 @@
 // See README.md for license details.
 
-package io
+package ili9341.spi
 
 import chisel3._
 import chisel3.util._

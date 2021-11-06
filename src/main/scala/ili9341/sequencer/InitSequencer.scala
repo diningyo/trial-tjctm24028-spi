@@ -7,9 +7,7 @@ import chisel3.stage._
 import chisel3.util._
 import chisel3.experimental.ChiselEnum
 
-import io._
-import treadle.Command
-import java.sql.Statement
+import ili9341.spi._
 
 /**
   * Sequencerのステート

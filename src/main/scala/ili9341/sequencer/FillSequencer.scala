@@ -7,7 +7,7 @@ import chisel3.stage._
 import chisel3.util._
 import chisel3.experimental.ChiselEnum
 
-import io._
+import ili9341.spi._
 
 object FillState extends ChiselEnum {
   val sIDLE = Value

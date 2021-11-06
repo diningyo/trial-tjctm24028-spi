@@ -8,8 +8,6 @@ import chisel3.util._
 
 import scala.math.{pow, round}
 
-import io._
-
 /**
   * SPIの方向
   */

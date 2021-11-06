@@ -7,7 +7,7 @@ import chisel3.stage._
 import chisel3.util._
 import chisel3.experimental.ChiselEnum
 
-import io._
+import ili9341.spi._
 
 object Color {
   val BLACK       = 0x0000 ///<   0,   0,   0
