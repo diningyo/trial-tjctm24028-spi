@@ -37,9 +37,9 @@ class FillSequencer() extends Module {
 
   // Fill
   val r_cmd_ctr = RegInit(0.U(10.W))
-  val r_width_ctr = Counter(width)
+  val r_width_ctr = RegInit(0.U(log2Ceil(width).W))
   val r_height_ctr = Counter(height)
-  val w_last_horizontal = r_width_ctr.value === (width - 1).U
+  val w_last_horizontal = r_width_ctr === (width - 1).U
   val w_last_vertical = r_height_ctr.value === (height - 1).U
   val w_last_cmd = r_cmd_ctr === 4.U
   val w_done_ramwr = r_cmd_ctr === 2.U
@@ -55,7 +55,7 @@ class FillSequencer() extends Module {
 
   when (w_running && m_stm.io.state.ramwr && (r_cmd_ctr >= 1.U) && io.sio.fire()) {
     when (!r_cmd_ctr(0)) {
-      r_width_ctr.inc
+      r_width_ctr := r_width_ctr + 1.U
     }
   }
 
@@ -77,7 +77,7 @@ class FillSequencer() extends Module {
 
   val w_x_start = r_height_ctr.value
   val w_x_end = w_x_start + 1.U
-  val w_y_start = r_width_ctr.value
+  val w_y_start = r_width_ctr
   val w_y_end = w_y_start + 1.U
 
   // IOの接続
